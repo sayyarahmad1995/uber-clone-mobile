@@ -8,7 +8,8 @@ const bool skipAuthenticationForDevelopment = true;
 
 enum DevStartupMode { welcome, rider, driver }
 
-const devStartupMode = DevStartupMode.driver; // Change this to test different startup modes
+const devStartupMode =
+    DevStartupMode.driver; // Change this to test different startup modes
 
 class HiGoApp extends StatelessWidget {
   const HiGoApp({super.key});

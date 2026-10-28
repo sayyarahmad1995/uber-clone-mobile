@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'mock_driver_vehicle.dart';
 
 class MockRideRequest {
   const MockRideRequest({
@@ -124,6 +125,17 @@ class DriverDemoStore extends ChangeNotifier {
       mockIncomingRequests.firstWhere((request) => request.id == requestId);
 
   void setOnline(bool value) {
+    // Going online requires an approved,
+    // explicitly selected vehicle.
+    if (value && !canGoOnline) {
+      return;
+    }
+
+    // Avoid unnecessary UI rebuilds.
+    if (_isOnline == value) {
+      return;
+    }
+
     _isOnline = value;
     notifyListeners();
   }
@@ -144,11 +156,18 @@ class DriverDemoStore extends ChangeNotifier {
 
   void resetDemo() {
     _bids.clear();
-    _isOnline = false;
-    notifyListeners();
     _completedTrips.clear();
     _tripsInProgress.clear();
     _assignmentStages.clear();
+
+    _isOnline = false;
+    _selectedVehicleId = null;
+    _vehicles
+      ..clear()
+      ..addAll(mockDriverVehicles);
+    _nextDemoVehicleNumber = 1;
+
+    notifyListeners();
   }
 
   // Add these getters.
@@ -287,6 +306,95 @@ class DriverDemoStore extends ChangeNotifier {
 
     _assignmentStages[requestId] = DemoAssignmentStage.awaitingCash;
     notifyListeners();
+  }
+
+  String? _selectedVehicleId;
+
+  final List<MockDriverVehicle> _vehicles = [...mockDriverVehicles];
+
+  int _nextDemoVehicleNumber = 1;
+
+  List<MockDriverVehicle> get vehicles => List.unmodifiable(_vehicles);
+
+  MockDriverVehicle registerDemoVehicle({
+    required String make,
+    required String model,
+    required String registrationNumber,
+    required String category,
+    required String serviceId,
+    String? categoryId,
+  }) {
+    final registration = registrationNumber.trim().toUpperCase();
+
+    if (make.trim().isEmpty ||
+        model.trim().isEmpty ||
+        category.trim().isEmpty ||
+        registration.isEmpty) {
+      throw ArgumentError('Complete all vehicle details.');
+    }
+
+    if (_vehicles.any(
+      (vehicle) => vehicle.registrationNumber.toUpperCase() == registration,
+    )) {
+      throw StateError('This registration number already exists.');
+    }
+
+    final vehicle = MockDriverVehicle(
+      id: 'demo_vehicle_${_nextDemoVehicleNumber++}',
+      make: make.trim(),
+      model: model.trim(),
+      registrationNumber: registration,
+      category: category.trim(),
+      approvalStatus: MockVehicleApprovalStatus.pending,
+      serviceId: serviceId,
+      categoryId: categoryId,
+    );
+
+    _vehicles.add(vehicle);
+    notifyListeners();
+
+    return vehicle;
+  }
+
+  List<MockDriverVehicle> get approvedVehicles =>
+      vehicles.where((vehicle) => vehicle.isApproved).toList();
+
+  String? get selectedVehicleId => _selectedVehicleId;
+
+  MockDriverVehicle? get selectedVehicle {
+    for (final vehicle in approvedVehicles) {
+      if (vehicle.id == _selectedVehicleId) {
+        return vehicle;
+      }
+    }
+    return null;
+  }
+
+  bool get canGoOnline => selectedVehicle != null;
+
+  bool selectVehicle(String vehicleId) {
+    // Do not switch vehicles while online or during
+    // an active assignment in this mock implementation.
+    if (isOnline || hasActiveAssignment) {
+      return false;
+    }
+
+    MockDriverVehicle? match;
+
+    for (final vehicle in approvedVehicles) {
+      if (vehicle.id == vehicleId) {
+        match = vehicle;
+        break;
+      }
+    }
+
+    if (match == null) return false;
+
+    if (_selectedVehicleId == vehicleId) return true;
+
+    _selectedVehicleId = vehicleId;
+    notifyListeners();
+    return true;
   }
 }
 

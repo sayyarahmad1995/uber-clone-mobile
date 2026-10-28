@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/higo_theme.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import '../models/mock_ride_request.dart';
+import '../vehicles/my_vehicles_screen.dart';
 
 class DriverAccountScreen extends StatelessWidget {
   const DriverAccountScreen({super.key});
@@ -144,7 +145,7 @@ class DriverAccountScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: HiGoTheme.border),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           CircleAvatar(
                             radius: 26,
@@ -156,11 +157,12 @@ class DriverAccountScreen extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 13),
+
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'My Vehicle',
                                   style: TextStyle(
                                     fontSize: 15,
@@ -168,10 +170,15 @@ class DriverAccountScreen extends StatelessWidget {
                                     color: HiGoTheme.navy,
                                   ),
                                 ),
-                                SizedBox(height: 5),
+                                const SizedBox(height: 5),
                                 Text(
-                                  'Vehicle details · Demo',
-                                  style: TextStyle(
+                                  store.selectedVehicle == null
+                                      ? 'No vehicle selected'
+                                      : '${store.selectedVehicle!.name} · '
+                                            '${store.selectedVehicle!.registrationNumber}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     color: HiGoTheme.secondaryText,
                                   ),
@@ -195,9 +202,15 @@ class DriverAccountScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 HiGoAccountTile(
                   icon: Icons.directions_car_outlined,
-                  title: 'Vehicle Information',
-                  subtitle: 'Vehicle details and preferences',
-                  onTap: () => _comingLater(context, 'Vehicle information'),
+                  title: 'My Vehicles',
+                  subtitle: 'Manage vehicles and approval status',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const MyVehiclesScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 10),
                 HiGoAccountTile(

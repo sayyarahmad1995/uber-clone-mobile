@@ -8,6 +8,8 @@ import '../bidding/ride_requests_screen.dart';
 import '../bidding/active_bids_screen.dart';
 import '../trip/driver_assignment_navigation.dart';
 import '../../../shared/widgets/higo_home_header.dart';
+import 'widgets/approved_vehicle_selector.dart';
+import '../vehicles/my_vehicles_screen.dart';
 
 class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key, required this.onAccountTap});
@@ -262,11 +264,11 @@ class DriverHomeScreen extends StatelessWidget {
 
               // Bottom availability panel.
               DraggableScrollableSheet(
-                initialChildSize: 0.38,
+                initialChildSize: 0.08,
                 minChildSize: 0.08,
                 maxChildSize: 0.80,
                 snap: true,
-                snapSizes: const [0.38],
+                snapSizes: const [0.52],
                 expand: true,
                 builder: (context, scrollController) {
                   return Container(
@@ -401,6 +403,18 @@ class DriverHomeScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 22),
+
+                        ApprovedVehicleSelector(
+                          onManageVehicles: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const MyVehiclesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 14),
 
                         AvailabilitySlider(
                           isOnline: store.isOnline,
