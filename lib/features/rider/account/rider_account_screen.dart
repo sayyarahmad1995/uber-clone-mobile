@@ -7,15 +7,12 @@ import 'personal_information_screen.dart';
 import 'rider_profile_store.dart';
 import 'saved_places_screen.dart';
 import '../../../app/app_mode_controller.dart';
+import '../../account/app_settings_screen.dart';
+import '../../account/help_support_screen.dart';
+import '../../account/about_higo_screen.dart';
 
 class RiderAccountScreen extends StatelessWidget {
   const RiderAccountScreen({super.key});
-
-  void _comingLater(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature will be available later.')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,21 +213,39 @@ class RiderAccountScreen extends StatelessWidget {
               icon: Icons.settings_outlined,
               title: 'Settings',
               subtitle: 'App preferences',
-              onTap: () => _comingLater(context, 'Settings'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AppSettingsScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 10),
             HiGoAccountTile(
               icon: Icons.help_outline,
               title: 'Help & Support',
               subtitle: 'Get help or contact us',
-              onTap: () => _comingLater(context, 'Help & Support'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const HelpSupportScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 10),
             HiGoAccountTile(
               icon: Icons.info_outline,
               title: 'About HiGO',
               subtitle: 'App information and legal details',
-              onTap: () => _comingLater(context, 'About HiGO'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AboutHiGoScreen(),
+                  ),
+                );
+              },
             ),
           ],
         ),

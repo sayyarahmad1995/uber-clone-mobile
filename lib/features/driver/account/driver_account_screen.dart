@@ -5,6 +5,8 @@ import '../../account/widgets/higo_account_tile.dart';
 import '../models/mock_ride_request.dart';
 import '../vehicles/my_vehicles_screen.dart';
 import '../../../app/app_mode_controller.dart';
+import '../../account/help_support_screen.dart';
+import '../../account/about_higo_screen.dart';
 
 class DriverAccountScreen extends StatelessWidget {
   const DriverAccountScreen({super.key});
@@ -239,14 +241,26 @@ class DriverAccountScreen extends StatelessWidget {
                   icon: Icons.help_outline,
                   title: 'Help & Support',
                   subtitle: 'Get help or contact us',
-                  onTap: () => _comingLater(context, 'Help & Support'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const HelpSupportScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 10),
                 HiGoAccountTile(
                   icon: Icons.info_outline,
                   title: 'About HiGO',
                   subtitle: 'App information and legal details',
-                  onTap: () => _comingLater(context, 'About HiGO'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AboutHiGoScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
