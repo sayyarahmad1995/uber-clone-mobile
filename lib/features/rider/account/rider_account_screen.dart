@@ -6,6 +6,7 @@ import 'become_driver_screen.dart';
 import 'personal_information_screen.dart';
 import 'rider_profile_store.dart';
 import 'saved_places_screen.dart';
+import '../../../app/app_mode_controller.dart';
 
 class RiderAccountScreen extends StatelessWidget {
   const RiderAccountScreen({super.key});
@@ -144,6 +145,13 @@ class RiderAccountScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 20),
+            HiGoAccountTile(
+              icon: Icons.swap_horiz,
+              title: 'Switch to Driver',
+              subtitle: 'Open the driver interface · Development',
+              onTap: switchToDriverMode,
+            ),
+            const SizedBox(height: 10),
             Material(
               color: const Color(0xFFF0EDFF),
               borderRadius: BorderRadius.circular(16),

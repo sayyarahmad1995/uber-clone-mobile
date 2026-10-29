@@ -4,6 +4,7 @@ import '../../../app/higo_theme.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import '../models/mock_ride_request.dart';
 import '../vehicles/my_vehicles_screen.dart';
+import '../../../app/app_mode_controller.dart';
 
 class DriverAccountScreen extends StatelessWidget {
   const DriverAccountScreen({super.key});
@@ -220,6 +221,13 @@ class DriverAccountScreen extends StatelessWidget {
                   onTap: () => _comingLater(context, 'Documents'),
                 ),
                 const SizedBox(height: 20),
+                HiGoAccountTile(
+                  icon: Icons.swap_horiz,
+                  title: 'Switch to Rider',
+                  subtitle: 'Use the rider interface',
+                  onTap: switchToRiderMode,
+                ),
+                const SizedBox(height: 10),
                 HiGoAccountTile(
                   icon: Icons.settings_outlined,
                   title: 'Settings',

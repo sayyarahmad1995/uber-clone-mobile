@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
+
+import 'app_mode_controller.dart';
 import 'higo_theme.dart';
-import '../features/welcome/welcome_screen.dart';
 import '../features/driver/home/driver_shell.dart';
 import '../features/rider/home/rider_shell.dart';
 
 const bool skipAuthenticationForDevelopment = true;
-
-enum DevStartupMode { welcome, rider, driver }
-
-const devStartupMode =
-    DevStartupMode.driver; // Change this to test different startup modes
 
 class HiGoApp extends StatelessWidget {
   const HiGoApp({super.key});
@@ -20,11 +16,17 @@ class HiGoApp extends StatelessWidget {
       title: 'HiGO',
       debugShowCheckedModeBanner: false,
       theme: HiGoTheme.light,
-      home: switch (devStartupMode) {
-        DevStartupMode.welcome => const WelcomeScreen(),
-        DevStartupMode.rider => const RiderShell(),
-        DevStartupMode.driver => const DriverShell(),
-      },
+      home: ValueListenableBuilder<HiGoAppMode>(
+        valueListenable: hiGoAppMode,
+        builder: (context, mode, _) {
+          return switch (mode) {
+            HiGoAppMode.rider => const RiderShell(key: ValueKey('rider-shell')),
+            HiGoAppMode.driver => const DriverShell(
+              key: ValueKey('driver-shell'),
+            ),
+          };
+        },
+      ),
     );
   }
 }
