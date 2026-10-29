@@ -16,7 +16,7 @@ class BecomeDriverScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
           child: Column(
             children: [
               Expanded(
@@ -24,56 +24,62 @@ class BecomeDriverScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Compact introduction card.
                       Container(
-                        padding: const EdgeInsets.all(26),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0EDFF),
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Column(
                           children: [
                             CircleAvatar(
-                              radius: 42,
+                              radius: 24,
                               backgroundColor: Colors.white,
                               child: Icon(
                                 Icons.directions_car_outlined,
-                                size: 43,
+                                size: 26,
                                 color: HiGoTheme.primary,
                               ),
                             ),
-                            SizedBox(height: 20),
+                            SizedBox(height: 10),
                             Text(
                               'Drive with HiGO',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 24,
+                                fontSize: 19,
                                 fontWeight: FontWeight.w800,
                                 color: HiGoTheme.navy,
                               ),
                             ),
-                            SizedBox(height: 10),
+                            SizedBox(height: 6),
                             Text(
                               'Apply to join HiGO as a driver '
                               'while keeping your rider account.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
+                                height: 1.35,
                                 color: HiGoTheme.secondaryText,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 26),
+
+                      const SizedBox(height: 18),
+
                       const Text(
                         'Driver application',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: HiGoTheme.navy,
                         ),
                       ),
-                      const SizedBox(height: 14),
+
+                      const SizedBox(height: 12),
+
                       const _InfoRow(
                         icon: Icons.person_outline,
                         title: 'Personal information',
@@ -93,13 +99,16 @@ class BecomeDriverScreen extends StatelessWidget {
                             'Required documents will be shown '
                             'in the application flow',
                       ),
-                      const SizedBox(height: 20),
+
+                      const SizedBox(height: 16),
+
                       const Text(
                         'Application requirements, review stages, '
                         'and eligibility will follow the existing '
                         'HiGO backend rules.',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
+                          height: 1.4,
                           color: HiGoTheme.secondaryText,
                         ),
                       ),
@@ -107,21 +116,28 @@ class BecomeDriverScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Driver applications will be '
-                        'implemented in a later milestone.',
+
+              const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Driver applications will be '
+                          'implemented in a later milestone.',
+                        ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Application Coming Soon'),
+                    );
+                  },
+                  child: const Text('Application Coming Soon'),
+                ),
               ),
-              const SizedBox(height: 7),
+
+              const SizedBox(height: 6),
+
               const Text(
                 'No application will be submitted in this demo.',
                 textAlign: TextAlign.center,
@@ -149,18 +165,20 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: const Color(0xFFF0EDFF),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: HiGoTheme.primary),
+          child: Icon(icon, color: HiGoTheme.primary, size: 20),
         ),
-        const SizedBox(width: 12),
+
+        const SizedBox(width: 10),
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,14 +188,17 @@ class _InfoRow extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   color: HiGoTheme.navy,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 5),
+
+              const SizedBox(height: 3),
+
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
+                  height: 1.3,
                   color: HiGoTheme.secondaryText,
                 ),
               ),
