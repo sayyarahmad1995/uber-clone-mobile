@@ -5,6 +5,7 @@ import '../../account/widgets/higo_account_tile.dart';
 import 'become_driver_screen.dart';
 import 'personal_information_screen.dart';
 import 'rider_profile_store.dart';
+import 'saved_places_screen.dart';
 
 class RiderAccountScreen extends StatelessWidget {
   const RiderAccountScreen({super.key});
@@ -134,7 +135,13 @@ class RiderAccountScreen extends StatelessWidget {
               icon: Icons.bookmark_border,
               title: 'Saved Places',
               subtitle: 'Home, work, and favorite locations',
-              onTap: () => _comingLater(context, 'Saved places'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SavedPlacesScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Material(
