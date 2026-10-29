@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/higo_theme.dart';
+import '../../../shared/widgets/higo_saved_place_tile.dart';
+import '../account/rider_saved_places_store.dart';
 import '../booking/location_selection_screen.dart';
 
 class RiderHomeScreen extends StatefulWidget {
@@ -14,8 +16,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   String? _pickup;
   String? _destination;
 
-  // Mock locations, to be replaced by actual
-  // recent trips and named places later.
   static const List<_RecentLocation> _recentLocations = [
     _RecentLocation(name: 'Centaurus Mall', address: 'F-8, Islamabad'),
     _RecentLocation(name: 'Faisal Mosque', address: 'E-8, Islamabad'),
@@ -38,15 +38,12 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Temporary map background.
           Positioned.fill(
             child: Image.asset(
               'assets/images/welcome_map.png',
               fit: BoxFit.cover,
             ),
           ),
-
-          // Draggable Rider Home panel.
           DraggableScrollableSheet(
             initialChildSize: 0.52,
             minChildSize: 0.52,
@@ -70,7 +67,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                   controller: scrollController,
                   padding: EdgeInsets.fromLTRB(
                     22,
-                    12,
+                    10,
                     22,
                     24 + MediaQuery.paddingOf(context).bottom,
                   ),
@@ -86,21 +83,20 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     const Text(
                       'Where to?',
                       style: TextStyle(
-                        fontSize: 23,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: HiGoTheme.navy,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.4,
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
 
-                    // Main destination search.
                     Material(
                       color: const Color(0xFFF8F9FD),
                       borderRadius: BorderRadius.circular(14),
@@ -109,8 +105,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 16,
+                            horizontal: 12,
+                            vertical: 10,
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
@@ -121,16 +117,16 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               const Icon(
                                 Icons.search,
                                 color: HiGoTheme.primary,
-                                size: 23,
+                                size: 20,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   _destination ?? 'Search destination',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     color: _destination == null
                                         ? HiGoTheme.secondaryText
@@ -140,7 +136,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               ),
                               const Icon(
                                 Icons.arrow_forward_ios,
-                                size: 15,
+                                size: 13,
                                 color: HiGoTheme.primary,
                               ),
                             ],
@@ -149,20 +145,19 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 12),
 
                     const Text(
                       'Our services',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: HiGoTheme.navy,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
-                    // Only the currently supported service.
                     Row(
                       children: [
                         _ServiceTile(
@@ -173,7 +168,65 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 26),
+                    AnimatedBuilder(
+                      animation: riderSavedPlacesStore,
+                      builder: (context, _) {
+                        final savedPlaces = riderSavedPlacesStore.places;
+
+                        if (savedPlaces.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final orderedPlaces = [
+                          ...savedPlaces.where(
+                            (p) => p.type == SavedPlaceType.home,
+                          ),
+                          ...savedPlaces.where(
+                            (p) => p.type == SavedPlaceType.work,
+                          ),
+                          ...savedPlaces.where(
+                            (p) => p.type == SavedPlaceType.custom,
+                          ),
+                        ];
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Saved places',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: HiGoTheme.navy,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 68,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding: EdgeInsets.zero,
+                                itemCount: orderedPlaces.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final place = orderedPlaces[index];
+                                  return HiGoSavedPlaceTile(
+                                    place: place,
+                                    onTap: () => _openLocationSelection(
+                                      initialDestination: place.address,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -181,25 +234,34 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         const Text(
                           'Recent locations',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: HiGoTheme.navy,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Full location history '
-                                  'will be available later.',
-                                ),
+                        SizedBox(
+                          height: 28,
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'See all',
-                            style: TextStyle(fontSize: 12),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Full location history '
+                                    'will be available later.',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'See all',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                         ),
                       ],
@@ -250,8 +312,8 @@ class _ServiceTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 104,
-        padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 10),
+        width: 92,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
           color: const Color(0xFFF2EFFF),
           borderRadius: BorderRadius.circular(14),
@@ -259,8 +321,8 @@ class _ServiceTile extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, color: HiGoTheme.primary, size: 27),
-            const SizedBox(height: 9),
+            Icon(icon, color: HiGoTheme.primary, size: 23),
+            const SizedBox(height: 5),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -285,34 +347,63 @@ class _RecentLocationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
+    return InkWell(
       onTap: onTap,
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF1EEFF),
-          shape: BoxShape.circle,
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        height: 52,
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1EEFF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.history,
+                color: HiGoTheme.primary,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    location.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: HiGoTheme.navy,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    location.address,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: HiGoTheme.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.north_west,
+              size: 16,
+              color: HiGoTheme.secondaryText,
+            ),
+          ],
         ),
-        child: const Icon(Icons.history, color: HiGoTheme.primary, size: 21),
-      ),
-      title: Text(
-        location.name,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: HiGoTheme.navy,
-        ),
-      ),
-      subtitle: Text(
-        location.address,
-        style: const TextStyle(fontSize: 12, color: HiGoTheme.secondaryText),
-      ),
-      trailing: const Icon(
-        Icons.north_west,
-        size: 18,
-        color: HiGoTheme.secondaryText,
       ),
     );
   }

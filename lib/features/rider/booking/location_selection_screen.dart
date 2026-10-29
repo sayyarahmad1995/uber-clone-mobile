@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/higo_theme.dart';
 import 'route_preview_screen.dart';
+import '../account/rider_saved_places_store.dart';
+import '../../../shared/widgets/higo_saved_place_tile.dart';
 
 class SelectedLocations {
   const SelectedLocations({required this.pickup, required this.destination});
@@ -91,9 +93,16 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
             .trim()
             .toLowerCase();
 
-    if (query.isEmpty) return _places;
+    final allPlaces = <String>{
+      ..._places,
+      ...riderSavedPlacesStore.places.map((place) => place.address),
+    }.toList();
 
-    return _places
+    if (query.isEmpty) {
+      return allPlaces;
+    }
+
+    return allPlaces
         .where((place) => place.toLowerCase().contains(query))
         .toList();
   }
@@ -120,18 +129,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       return;
     }
 
-    if (!_places.contains(pickup) || !_places.contains(destination)) {
+    final validAddresses = <String>{
+      ..._places,
+      ...riderSavedPlacesStore.places.map((place) => place.address),
+    };
+
+    if (!validAddresses.contains(pickup) ||
+        !validAddresses.contains(destination)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select locations from the suggestions.')),
-      );
-      return;
-    }
-
-    if (pickup == destination) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pickup and destination must be different.'),
-        ),
       );
       return;
     }
@@ -235,6 +241,66 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                   ),
                 ),
                 const Divider(height: 1),
+                AnimatedBuilder(
+                  animation: riderSavedPlacesStore,
+                  builder: (context, _) {
+                    final savedPlaces = riderSavedPlacesStore.places;
+
+                    if (savedPlaces.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final orderedPlaces = [
+                      ...savedPlaces.where(
+                        (p) => p.type == SavedPlaceType.home,
+                      ),
+                      ...savedPlaces.where(
+                        (p) => p.type == SavedPlaceType.work,
+                      ),
+                      ...savedPlaces.where(
+                        (p) => p.type == SavedPlaceType.custom,
+                      ),
+                    ];
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 14, 24, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Saved places',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: HiGoTheme.navy,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 68,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.zero,
+                              itemCount: orderedPlaces.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final place = orderedPlaces[index];
+
+                                return HiGoSavedPlaceTile(
+                                  place: place,
+                                  onTap: () => _choosePlace(place.address),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
                   child: Align(
