@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/higo_theme.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import 'become_driver_screen.dart';
+import 'personal_information_screen.dart';
+import 'rider_profile_store.dart';
 
 class RiderAccountScreen extends StatelessWidget {
   const RiderAccountScreen({super.key});
@@ -47,7 +49,13 @@ class RiderAccountScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
-                onTap: () => _comingLater(context, 'Profile editing'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PersonalInformationScreen(),
+                    ),
+                  );
+                },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.all(18),
@@ -55,46 +63,55 @@ class RiderAccountScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: HiGoTheme.border),
                   ),
-                  child: const Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Color(0xFFEFECFF),
-                        child: Text(
-                          'A',
-                          style: TextStyle(
-                            fontSize: 23,
-                            fontWeight: FontWeight.w800,
+                  child: AnimatedBuilder(
+                    animation: riderProfileStore,
+                    builder: (context, _) {
+                      final profile = riderProfileStore.profile;
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: const Color(0xFFEFECFF),
+                            child: Text(
+                              profile.firstName[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 23,
+                                fontWeight: FontWeight.w800,
+                                color: HiGoTheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  profile.fullName,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: HiGoTheme.navy,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                const Text(
+                                  'Rider · Demo profile',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: HiGoTheme.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
                             color: HiGoTheme.primary,
                           ),
-                        ),
-                      ),
-                      SizedBox(width: 13),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ali',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: HiGoTheme.navy,
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              'Rider · Demo profile',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: HiGoTheme.secondaryText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.chevron_right, color: HiGoTheme.primary),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -104,7 +121,13 @@ class RiderAccountScreen extends StatelessWidget {
               icon: Icons.person_outline,
               title: 'Personal Information',
               subtitle: 'Your profile and contact details',
-              onTap: () => _comingLater(context, 'Personal information'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PersonalInformationScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 10),
             HiGoAccountTile(

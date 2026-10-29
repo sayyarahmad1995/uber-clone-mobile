@@ -6,6 +6,7 @@ import '../account/rider_account_screen.dart';
 import '../payments/rider_payments_screen.dart';
 import '../rides/rider_rides_screen.dart';
 import 'rider_home_screen.dart';
+import '../account/rider_profile_store.dart';
 
 class RiderShell extends StatefulWidget {
   const RiderShell({super.key});
@@ -44,22 +45,29 @@ class _RiderShellState extends State<RiderShell> {
                   bottom: false,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 12),
-                    child: HiGoHomeHeader(
-                      firstName: 'Ali',
-                      onAccountTap: () => _selectTab(3),
-                      onNotifications: () {
-                        _showDemoMessage('Rider notifications coming later.');
-                      },
-                      onRecenter: () {
-                        _showDemoMessage(
-                          'Recenter will be available '
-                          'with the interactive map.',
-                        );
-                      },
-                      onNorthUp: () {
-                        _showDemoMessage(
-                          'North-up will be available '
-                          'with the interactive map.',
+                    child: AnimatedBuilder(
+                      animation: riderProfileStore,
+                      builder: (context, _) {
+                        return HiGoHomeHeader(
+                          firstName: riderProfileStore.profile.firstName,
+                          onAccountTap: () => _selectTab(3),
+                          onNotifications: () {
+                            _showDemoMessage(
+                              'Rider notifications coming later.',
+                            );
+                          },
+                          onRecenter: () {
+                            _showDemoMessage(
+                              'Recenter will be available '
+                              'with the interactive map.',
+                            );
+                          },
+                          onNorthUp: () {
+                            _showDemoMessage(
+                              'North-up will be available '
+                              'with the interactive map.',
+                            );
+                          },
                         );
                       },
                     ),
