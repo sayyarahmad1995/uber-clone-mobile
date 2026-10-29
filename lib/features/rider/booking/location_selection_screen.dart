@@ -142,6 +142,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       return;
     }
 
+    if (pickup == destination) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pickup and destination must be different.'),
+        ),
+      );
+      return;
+    }
+
     final locations = SelectedLocations(
       pickup: pickup,
       destination: destination,

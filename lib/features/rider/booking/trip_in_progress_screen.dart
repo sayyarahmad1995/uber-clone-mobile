@@ -5,6 +5,7 @@ import 'cash_payment_screen.dart';
 import 'location_selection_screen.dart';
 import 'mock_driver_offer.dart';
 import 'ride_category.dart';
+import '../rides/rider_ride_history_store.dart';
 
 class TripInProgressScreen extends StatelessWidget {
   const TripInProgressScreen({
@@ -19,6 +20,23 @@ class TripInProgressScreen extends StatelessWidget {
   final RideCategory rideCategory;
 
   void _completeDemoTrip(BuildContext context) {
+    final tripRoute = ModalRoute.of(context);
+
+    if (tripRoute == null) return;
+
+    riderRideHistoryStore.recordCompletedRide(
+      tripKey: tripRoute,
+      ride: CompletedRiderRide(
+        pickup: locations.pickup,
+        destination: locations.destination,
+        category: rideCategory.name,
+        driverName: offer.name,
+        vehicle: offer.vehicle,
+        farePkr: offer.farePkr,
+        completedAt: DateTime.now(),
+      ),
+    );
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => CashPaymentScreen(
