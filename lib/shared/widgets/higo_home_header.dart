@@ -12,10 +12,12 @@ class HiGoHomeHeader extends StatelessWidget {
     required this.onRecenter,
     required this.onNorthUp,
     this.photo,
+    this.showMapControls = true,
   });
 
   final String firstName;
   final ImageProvider? photo;
+  final bool showMapControls;
   final VoidCallback onAccountTap;
   final VoidCallback onNotifications;
   final VoidCallback onRecenter;
@@ -124,6 +126,7 @@ class HiGoHomeHeader extends StatelessWidget {
           onNotifications: onNotifications,
           onRecenter: onRecenter,
           onNorthUp: onNorthUp,
+          showMapButtons: showMapControls,
         ),
       ],
     );

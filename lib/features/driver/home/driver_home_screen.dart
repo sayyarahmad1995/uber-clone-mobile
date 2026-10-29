@@ -11,10 +11,35 @@ import '../../../shared/widgets/higo_home_header.dart';
 import 'widgets/approved_vehicle_selector.dart';
 import '../vehicles/my_vehicles_screen.dart';
 
-class DriverHomeScreen extends StatelessWidget {
+class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key, required this.onAccountTap});
 
   final VoidCallback onAccountTap;
+
+  @override
+  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
+}
+
+class _DriverHomeScreenState extends State<DriverHomeScreen> {
+  bool _showMapHeader = true;
+
+  bool _onPanelNotification(DraggableScrollableNotification notification) {
+    final shouldShow = notification.extent < 0.78;
+
+    if (shouldShow != _showMapHeader) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _showMapHeader == shouldShow) {
+          return;
+        }
+
+        setState(() {
+          _showMapHeader = shouldShow;
+        });
+      });
+    }
+
+    return false;
+  }
 
   Future<void> _showRequest(
     BuildContext context,
@@ -232,7 +257,8 @@ class DriverHomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                   child: HiGoHomeHeader(
                     firstName: 'Ahmed',
-                    onAccountTap: onAccountTap,
+                    showMapControls: _showMapHeader,
+                    onAccountTap: widget.onAccountTap,
                     onNotifications: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -263,216 +289,221 @@ class DriverHomeScreen extends StatelessWidget {
               ),
 
               // Bottom availability panel.
-              DraggableScrollableSheet(
-                initialChildSize: 0.08,
-                minChildSize: 0.08,
-                maxChildSize: 0.80,
-                snap: true,
-                snapSizes: const [0.52],
-                expand: true,
-                builder: (context, scrollController) {
-                  return Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(26),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x19000000),
-                          blurRadius: 22,
-                          offset: Offset(0, -4),
+              NotificationListener<DraggableScrollableNotification>(
+                onNotification: _onPanelNotification,
+                child: DraggableScrollableSheet(
+                  initialChildSize: 0.08,
+                  minChildSize: 0.08,
+                  maxChildSize: 0.80,
+                  snap: true,
+                  snapSizes: const [0.52],
+                  expand: true,
+                  builder: (context, scrollController) {
+                    return Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(26),
                         ),
-                      ],
-                    ),
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
-                      children: [
-                        // Drag handle
-                        Center(
-                          child: Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: HiGoTheme.border,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              size: 15,
-                              color: store.isOnline
-                                  ? const Color(0xFF0A9953)
-                                  : const Color(0xFFA3A9C1),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                store.isOnline
-                                    ? 'You are online'
-                                    : 'You are offline',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: HiGoTheme.navy,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        if (store.hasActiveAssignment) ...[
-                          const SizedBox(height: 14),
-                          Material(
-                            color: const Color(0xFFF0EDFF),
-                            borderRadius: BorderRadius.circular(14),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: () => openDriverAssignment(context),
-                              child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.directions_car,
-                                      color: HiGoTheme.primary,
-                                      size: 25,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Current assignment',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              color: HiGoTheme.navy,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            store
-                                                    .assignmentStage(
-                                                      store.activeAssignmentId!,
-                                                    )
-                                                    ?.label ??
-                                                'Continue trip',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: HiGoTheme.secondaryText,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.chevron_right,
-                                      color: HiGoTheme.primary,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x19000000),
+                            blurRadius: 22,
+                            offset: Offset(0, -4),
                           ),
                         ],
-
-                        const SizedBox(height: 6),
-
-                        Padding(
-                          padding: const EdgeInsets.only(left: 27),
-                          child: Text(
-                            store.isOnline
-                                ? 'Ready to receive ride requests.'
-                                : 'Go online to start receiving '
-                                      'ride requests.',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: HiGoTheme.secondaryText,
+                      ),
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+                        children: [
+                          // Drag handle
+                          Center(
+                            child: Container(
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: HiGoTheme.border,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 22),
+                          const SizedBox(height: 20),
 
-                        ApprovedVehicleSelector(
-                          onManageVehicles: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const MyVehiclesScreen(),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                size: 15,
+                                color: store.isOnline
+                                    ? const Color(0xFF0A9953)
+                                    : const Color(0xFFA3A9C1),
                               ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        AvailabilitySlider(
-                          isOnline: store.isOnline,
-                          onChanged: store.setOnline,
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        const Divider(height: 1),
-
-                        const SizedBox(height: 18),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _HomeStat(
-                                icon: Icons.inbox_outlined,
-                                value: store.isOnline
-                                    ? '${store.availableRequests.length}'
-                                    : '0',
-                                label: 'Requests',
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const RideRequestsScreen(),
-                                    ),
-                                  );
-                                },
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  store.isOnline
+                                      ? 'You are online'
+                                      : 'You are offline',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: HiGoTheme.navy,
+                                  ),
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              child: _HomeStat(
-                                icon: Icons.local_offer_outlined,
-                                value: '${store.activeBids.length}',
-                                label: 'Active bids',
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const ActiveBidsScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const Expanded(
-                              child: _HomeStat(
-                                icon: Icons.bar_chart_rounded,
-                                value: '0',
-                                label: 'Trips today',
+                            ],
+                          ),
+
+                          if (store.hasActiveAssignment) ...[
+                            const SizedBox(height: 14),
+                            Material(
+                              color: const Color(0xFFF0EDFF),
+                              borderRadius: BorderRadius.circular(14),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () => openDriverAssignment(context),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.directions_car,
+                                        color: HiGoTheme.primary,
+                                        size: 25,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Current assignment',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                color: HiGoTheme.navy,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              store
+                                                      .assignmentStage(
+                                                        store
+                                                            .activeAssignmentId!,
+                                                      )
+                                                      ?.label ??
+                                                  'Continue trip',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: HiGoTheme.secondaryText,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: HiGoTheme.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
+
+                          const SizedBox(height: 6),
+
+                          Padding(
+                            padding: const EdgeInsets.only(left: 27),
+                            child: Text(
+                              store.isOnline
+                                  ? 'Ready to receive ride requests.'
+                                  : 'Go online to start receiving '
+                                        'ride requests.',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: HiGoTheme.secondaryText,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          ApprovedVehicleSelector(
+                            onManageVehicles: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const MyVehiclesScreen(),
+                                ),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          AvailabilitySlider(
+                            isOnline: store.isOnline,
+                            onChanged: store.setOnline,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          const Divider(height: 1),
+
+                          const SizedBox(height: 18),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _HomeStat(
+                                  icon: Icons.inbox_outlined,
+                                  value: store.isOnline
+                                      ? '${store.availableRequests.length}'
+                                      : '0',
+                                  label: 'Requests',
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const RideRequestsScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                child: _HomeStat(
+                                  icon: Icons.local_offer_outlined,
+                                  value: '${store.activeBids.length}',
+                                  label: 'Active bids',
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ActiveBidsScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const Expanded(
+                                child: _HomeStat(
+                                  icon: Icons.bar_chart_rounded,
+                                  value: '0',
+                                  label: 'Trips today',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           );

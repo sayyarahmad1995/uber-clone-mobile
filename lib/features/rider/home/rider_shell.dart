@@ -18,6 +18,25 @@ class RiderShell extends StatefulWidget {
 class _RiderShellState extends State<RiderShell> {
   int _selectedIndex = 0;
 
+  bool _showMapHeader = true;
+
+  bool _onPanelNotification(DraggableScrollableNotification notification) {
+    // The current Rider Home maximum extent is 0.80.
+    final shouldShow = notification.extent < 0.78;
+
+    if (shouldShow != _showMapHeader) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _showMapHeader == shouldShow) return;
+
+        setState(() {
+          _showMapHeader = shouldShow;
+        });
+      });
+    }
+
+    return false;
+  }
+
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -36,7 +55,10 @@ class _RiderShellState extends State<RiderShell> {
         children: [
           Stack(
             children: [
-              const RiderHomeScreen(),
+              NotificationListener<DraggableScrollableNotification>(
+                onNotification: _onPanelNotification,
+                child: const RiderHomeScreen(),
+              ),
               Positioned(
                 left: 18,
                 right: 18,
@@ -50,6 +72,7 @@ class _RiderShellState extends State<RiderShell> {
                       builder: (context, _) {
                         return HiGoHomeHeader(
                           firstName: riderProfileStore.profile.firstName,
+                          showMapControls: _showMapHeader,
                           onAccountTap: () => _selectTab(3),
                           onNotifications: () {
                             _showDemoMessage(
