@@ -58,7 +58,7 @@ class DriverOffersHeader extends StatelessWidget {
             children: [
               const Icon(Icons.circle, size: 10, color: Color(0xFF00A870)),
               Text(
-                '\$count ${count == 1 ? 'offer' : 'offers'} · Request is live',
+                '$count ${count == 1 ? 'offer' : 'offers'} · Request is live',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: HiGoTheme.secondaryText,
@@ -236,7 +236,7 @@ class DriverOfferCard extends StatelessWidget {
           ),
           LayoutBuilder(
             builder: (context, constraints) {
-              final compact = constraints.maxWidth < 345 || largeText;
+              final compact = constraints.maxWidth < 315 || largeText;
               final details = TextButton(
                 onPressed: onDetails,
                 style: TextButton.styleFrom(
@@ -390,7 +390,7 @@ class DriverOfferBottomSheet extends StatelessWidget {
                     const SizedBox(width: 9),
                     Expanded(
                       child: Text(
-                        '\$pickup  →  \$destination',
+                        '$pickup  →  $destination',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -404,38 +404,54 @@ class DriverOfferBottomSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Your offer',
-                          style: TextStyle(color: HiGoTheme.secondaryText),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 345 ||
+                      MediaQuery.textScalerOf(context).scale(14) > 18;
+                  final fare = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Your offer',
+                        style: TextStyle(color: HiGoTheme.secondaryText),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        formatOfferFare(proposedFarePkr),
+                        style: const TextStyle(
+                          color: HiGoTheme.navy,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          formatOfferFare(proposedFarePkr),
-                          style: const TextStyle(
-                            color: HiGoTheme.navy,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  FilledButton(
+                      ),
+                    ],
+                  );
+                  final button = FilledButton(
                     onPressed: onIncreaseFare,
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, 48),
                       backgroundColor: HiGoTheme.primary,
                     ),
                     child: const Text('Increase fare'),
-                  ),
-                ],
+                  );
+                  if (compact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        fare,
+                        const SizedBox(height: 8),
+                        button,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: fare),
+                      const SizedBox(width: 10),
+                      button,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 8),
               const Text(
