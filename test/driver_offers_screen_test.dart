@@ -86,7 +86,7 @@ void main() {
 
     expect(find.text('Driver offers'), findsOneWidget);
     expect(find.text('Ahmed Khan'), findsNothing);
-    expect(find.text('Your request is still live.'), findsOneWidget);
+    expect(find.textContaining('Request is live'), findsOneWidget);
   });
 
   testWidgets('unseen offers are announced when browsing older ones', (
@@ -111,11 +111,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 new offer'), findsNothing);
   });
+  testWidgets('compact layout keeps controls available at larger text scale', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HiGoTheme.light,
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            textScaler: TextScaler.linear(1.4),
+          ),
+          child: _testScreen(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Increase fare'), findsOneWidget);
+    expect(find.text('Choose'), findsOneWidget);
+  });
+
 }
 
 Widget _testApp() => MaterialApp(
   theme: HiGoTheme.light,
-  home: DriverOffersScreen(
+  home: _testScreen(),
+);
+
+Widget _testScreen() => DriverOffersScreen(
     locations: const SelectedLocations(
       pickup: 'F-7 Markaz',
       destination: 'Centaurus Mall',
@@ -127,5 +154,4 @@ Widget _testApp() => MaterialApp(
       icon: Icons.directions_car,
       estimatedFarePkr: 450,
     ),
-  ),
-);
+  );
