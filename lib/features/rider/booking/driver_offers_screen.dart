@@ -444,7 +444,18 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
                     Expanded(
                       child: Stack(
                         children: [
-                          Positioned.fill(child: _buildOffersArea()),
+                          Positioned.fill(
+                            child: Padding(
+                              // Reserve the chip's space so it cannot cover
+                              // Decline or Choose on a visible offer card.
+                              padding: EdgeInsets.only(
+                                bottom: _unseenOffers > 0 && !_followingLatest
+                                    ? 64
+                                    : 0,
+                              ),
+                              child: _buildOffersArea(),
+                            ),
+                          ),
                           if (_unseenOffers > 0 && !_followingLatest)
                             Positioned(
                               bottom: 12,
@@ -541,7 +552,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
       onPointerCancel: (_) => _finishTouch(),
       child: ListView.separated(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 78),
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
         itemCount: _offers.length,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
