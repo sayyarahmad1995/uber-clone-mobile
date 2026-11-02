@@ -43,6 +43,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   String? _pendingOfferId;
   bool _followingLatest = true;
   bool _touchingList = false;
+  bool _interactionPaused = false;
   bool _selectionPending = false;
   bool _requestAssigned = false;
   bool _allowLeave = false;
@@ -74,11 +75,14 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
       }
       final offer = _mockQueue[_nextMockIndex++];
       if (!_declinedIds.contains(offer.id)) {
-        final follow = _followingLatest && !_touchingList;
+        final follow = _followingLatest && !_touchingList && !_interactionPaused;
         setState(() {
           _offers.add(offer);
           _state = _OffersState.receiving;
-          if (!follow && _scrollController.hasClients) _unseenOffers++;
+          if (!follow && _scrollController.hasClients) {
+            _unseenOffers++;
+            _followingLatest = false;
+          }
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && follow) _scrollToLatest(animated: _offers.length > 1);
@@ -205,6 +209,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   }
 
   Future<void> _increaseFare() async {
+    setState(() => _interactionPaused = true);
     final controller = TextEditingController(
       text: (_proposedFarePkr + 50).toString(),
     );
@@ -265,7 +270,9 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
       ),
     );
     controller.dispose();
-    if (!mounted || newFare == null) return;
+    if (!mounted) return;
+    setState(() => _interactionPaused = false);
+    if (newFare == null) return;
     setState(() => _proposedFarePkr = newFare);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Your offer has been increased.')),
@@ -277,6 +284,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
       _leaveToHome();
       return;
     }
+    setState(() => _interactionPaused = true);
     final cancel = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -296,7 +304,9 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         ],
       ),
     );
-    if (!mounted || cancel != true) return;
+    if (!mounted) return;
+    setState(() => _interactionPaused = false);
+    if (cancel != true) return;
     _leaveToHome();
   }
 
@@ -308,8 +318,9 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
     });
   }
 
-  void _showSafetyHelp() {
-    showModalBottomSheet<void>(
+  Future<void> _showSafetyHelp() async {
+    setState(() => _interactionPaused = true);
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) => const SafeArea(
@@ -342,10 +353,12 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         ),
       ),
     );
+    if (mounted) setState(() => _interactionPaused = false);
   }
 
-  void _viewDetails(MockDriverOffer offer) {
-    showModalBottomSheet<void>(
+  Future<void> _viewDetails(MockDriverOffer offer) async {
+    setState(() => _interactionPaused = true);
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
@@ -388,6 +401,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         ),
       ),
     );
+    if (mounted) setState(() => _interactionPaused = false);
   }
 
   @override
