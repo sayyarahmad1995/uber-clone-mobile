@@ -458,7 +458,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
                                     Icons.keyboard_arrow_down_rounded,
                                   ),
                                   label: Text(
-                                    '\$_unseenOffers new '
+                                    '$_unseenOffers new '
                                     '${_unseenOffers == 1 ? 'offer' : 'offers'}',
                                   ),
                                   style: FilledButton.styleFrom(
