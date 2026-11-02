@@ -164,7 +164,7 @@ class _DriverConfirmationScreenState extends State<DriverConfirmationScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Confirmation expires in \$_secondsLeft s',
+                              'Confirmation expires in $_secondsLeft s',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: HiGoTheme.primary,
