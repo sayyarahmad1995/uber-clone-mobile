@@ -13,7 +13,7 @@ import 'location_selection_screen.dart';
 import 'mock_driver_offer.dart';
 import 'ride_category.dart';
 
-enum _OffersState { waiting, receiving, noOffers }
+enum _OffersState { waiting, receiving }
 
 class DriverOffersScreen extends StatefulWidget {
   const DriverOffersScreen({
@@ -45,6 +45,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   bool _touchingList = false;
   bool _selectionPending = false;
   bool _requestAssigned = false;
+  bool _allowLeave = false;
   _OffersState _state = _OffersState.waiting;
 
   @override
@@ -84,32 +85,6 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         });
       }
       if (_nextMockIndex >= _mockQueue.length) timer.cancel();
-    });
-  }
-
-  void _restartMockOffers() {
-    _timer?.cancel();
-    setState(() {
-      _offers.clear();
-      _declinedIds.clear();
-      _nextMockIndex = 0;
-      _unseenOffers = 0;
-      _pendingOfferId = null;
-      _followingLatest = true;
-      _state = _OffersState.waiting;
-    });
-    if (_scrollController.hasClients) _scrollController.jumpTo(0);
-    _beginMockTimer();
-  }
-
-  void _simulateNoOffers() {
-    _timer?.cancel();
-    setState(() {
-      _offers.clear();
-      _nextMockIndex = _mockQueue.length;
-      _unseenOffers = 0;
-      _followingLatest = true;
-      _state = _OffersState.noOffers;
     });
   }
 
@@ -224,7 +199,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         message: 'Driver did not confirm in time. Choose another offer.',
       );
     }
-    if (!_requestAssigned && _state != _OffersState.noOffers) {
+    if (!_requestAssigned) {
       _beginMockTimer();
     }
   }
@@ -298,7 +273,10 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   }
 
   Future<void> _confirmCancellation() async {
-    if (_requestAssigned) return;
+    if (_requestAssigned) {
+      _leaveToHome();
+      return;
+    }
     final cancel = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -319,8 +297,15 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
       ),
     );
     if (!mounted || cancel != true) return;
+    _leaveToHome();
+  }
+
+  void _leaveToHome() {
     _timer?.cancel();
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _allowLeave = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    });
   }
 
   void _showSafetyHelp() {
@@ -416,9 +401,9 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: _allowLeave,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _confirmCancellation();
+        if (!didPop && !_allowLeave) _confirmCancellation();
       },
       child: Scaffold(
         body: Stack(
