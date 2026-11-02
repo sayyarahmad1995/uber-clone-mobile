@@ -45,8 +45,8 @@ String formatOfferFare(int amount) {
 String compareDriverFare(int driverFare, int currentRiderFare) {
   final difference = driverFare - currentRiderFare;
   if (difference == 0) return 'Matches your offer';
-  if (difference > 0) return '+ \${formatOfferFare(difference)}';
-  return '\${formatOfferFare(-difference)} below your offer';
+  if (difference > 0) return '+ ${formatOfferFare(difference)}';
+  return '${formatOfferFare(-difference)} below your offer';
 }
 
 // These demonstration offers are listed in chronological arrival order.
