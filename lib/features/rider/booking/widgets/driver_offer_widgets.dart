@@ -2,73 +2,69 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/higo_theme.dart';
 import '../mock_driver_offer.dart';
-class DriverOffersHeader extends StatelessWidget {
-  const DriverOffersHeader({
-    required this.count,
+/// Map overlay controls. There is intentionally no opaque app bar or title.
+class DriverOffersMapControls extends StatelessWidget {
+  const DriverOffersMapControls({
+    super.key,
     required this.onBack,
     required this.onHelp,
   });
 
-  final int count;
   final VoidCallback onBack;
   final VoidCallback onHelp;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xF7FFFFFF),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-      child: Column(
+    return Padding(
+      key: const Key('offers-floating-controls'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Back',
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back, color: HiGoTheme.navy),
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              ),
-              const Expanded(
-                child: Text(
-                  'Driver offers',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: HiGoTheme.navy,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Safety and help',
-                onPressed: onHelp,
-                icon: const Icon(
-                  Icons.shield_outlined,
-                  color: HiGoTheme.primary,
-                ),
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              ),
-            ],
+          _MapControlButton(
+            icon: Icons.arrow_back,
+            tooltip: 'Back',
+            onPressed: onBack,
           ),
-          const SizedBox(height: 4),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            children: [
-              const Icon(Icons.circle, size: 10, color: Color(0xFF00A870)),
-              Text(
-                '$count ${count == 1 ? 'offer' : 'offers'} · Request is live',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: HiGoTheme.secondaryText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          _MapControlButton(
+            icon: Icons.shield_outlined,
+            tooltip: 'Safety and help',
+            onPressed: onHelp,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MapControlButton extends StatelessWidget {
+  const _MapControlButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shape: const CircleBorder(),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          color: tooltip == 'Back' ? HiGoTheme.navy : HiGoTheme.primary,
+        ),
+        constraints: const BoxConstraints(
+          minWidth: 48,
+          minHeight: 48,
+        ),
       ),
     );
   }
