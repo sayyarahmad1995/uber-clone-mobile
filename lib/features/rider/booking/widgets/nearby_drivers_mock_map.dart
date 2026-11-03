@@ -210,7 +210,7 @@ class RiderScanningPulsePainter extends CustomPainter {
     for (var index = 0; index < 2; index++) {
       final phase = (progress + index * 0.5) % 1.0;
       final radius = minRadius + (maxRadius - minRadius) * phase;
-      final alpha = (0.26 * (1.0 - phase)).clamp(0.0, 1.0);
+      final alpha = (0.26 * (1.0 - phase)).clamp(0.0, 1.0).toDouble();
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5 - phase * 1.0
