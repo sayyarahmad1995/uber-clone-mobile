@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uberclone/app/higo_theme.dart';
 import 'package:uberclone/features/rider/booking/driver_offers_screen.dart';
@@ -28,7 +29,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_testApp());
-    expect(find.text('Waiting for driver offers'), findsOneWidget);
+    expect(find.text('Waiting for driver offers'), findsNothing);
+    expect(find.text('Looking for offers · Map preview'), findsOneWidget);
+    expect(find.byKey(const Key('mock-rider-location')), findsOneWidget);
+    expect(find.byKey(const Key('mock-driver-1')), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
@@ -41,13 +45,36 @@ void main() {
     await tester.tap(find.text('Decline').first);
     await tester.pump();
     expect(find.text('Ahmed Khan'), findsNothing);
-    expect(find.text('Waiting for more offers'), findsOneWidget);
-    expect(find.text('Your request is still live.'), findsOneWidget);
+    expect(find.text('Waiting for more offers'), findsNothing);
+    expect(find.text('Looking for offers · Map preview'), findsOneWidget);
+    expect(find.textContaining('0 offers · Request is live'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
     expect(find.text('Bilal Ahmed'), findsOneWidget);
     expect(find.text('Ahmed Khan'), findsNothing);
+  });
+
+  testWidgets('status area remains white and map markers stay behind bids', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp());
+
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(scaffold.backgroundColor, Colors.white);
+
+    final statusStyle = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+    );
+    expect(statusStyle.value.statusBarColor, Colors.white);
+    expect(statusStyle.value.statusBarIconBrightness, Brightness.dark);
+    expect(tester.widget<SafeArea>(find.byType(SafeArea).first).top, isTrue);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(find.text('Ahmed Khan'), findsOneWidget);
+    expect(find.byKey(const Key('mock-rider-location')), findsOneWidget);
+    expect(find.text('Looking for offers · Map preview'), findsNothing);
   });
 
   testWidgets('raising rider fare preserves existing bid prices', (tester) async {
