@@ -1,15 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../app/higo_theme.dart';
 
-/// A visual-only map preview for the mock booking flow.
-///
-/// The background is an existing static image. These marker positions are
-/// deliberately illustrative, not GPS coordinates or live driver presence.
+/// Illustrative map preview only. Positions are not live GPS coordinates.
 class NearbyDriversMockMap extends StatelessWidget {
-  const NearbyDriversMockMap({super.key, required this.showWaitingHint});
+  const NearbyDriversMockMap({super.key, required this.scanning});
 
-  final bool showWaitingHint;
+  /// The pulse is visible while no driver bids are available.
+  final bool scanning;
 
   @override
   Widget build(BuildContext context) {
@@ -46,61 +46,13 @@ class NearbyDriversMockMap extends StatelessWidget {
                       child: _MockDriverMarker(id: '4'),
                     ),
                   ],
-                  const Align(
-                    alignment: Alignment(0, 0.12),
-                    child: _MockRiderLocation(),
+                  Align(
+                    alignment: const Alignment(0, 0.12),
+                    child: _MockRiderLocation(scanning: scanning),
                   ),
                 ],
               ),
             ),
-            if (showWaitingHint)
-              Positioned(
-                left: 12,
-                right: 12,
-                top: 12,
-                child: Center(
-                  child: Container(
-                    key: const Key('nearby-drivers-hint'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(
-                          blurRadius: 8,
-                          color: Color(0x180F1B4B),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.search_rounded,
-                          size: 17,
-                          color: HiGoTheme.primary,
-                        ),
-                        SizedBox(width: 7),
-                        Flexible(
-                          child: Text(
-                            'Looking for offers · Map preview',
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: HiGoTheme.navy,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         );
       },
@@ -108,61 +60,131 @@ class NearbyDriversMockMap extends StatelessWidget {
   }
 }
 
-class _MockRiderLocation extends StatelessWidget {
-  const _MockRiderLocation();
+class _MockRiderLocation extends StatefulWidget {
+  const _MockRiderLocation({required this.scanning});
+
+  final bool scanning;
+
+  @override
+  State<_MockRiderLocation> createState() => _MockRiderLocationState();
+}
+
+class _MockRiderLocationState extends State<_MockRiderLocation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  bool get _shouldAnimate =>
+      widget.scanning && !MediaQuery.of(context).disableAnimations;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MockRiderLocation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updateAnimation();
+  }
+
+  void _updateAnimation() {
+    if (_shouldAnimate) {
+      if (!_pulse.isAnimating) _pulse.repeat();
+    } else {
+      _pulse.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Rider current location preview, not live GPS',
+      label: widget.scanning
+          ? 'Scanning for nearby drivers, demo locations'
+          : 'Rider location preview, not live GPS',
       child: Column(
         key: const Key('mock-rider-location'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 66,
-            height: 66,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: HiGoTheme.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: HiGoTheme.primary.withValues(alpha: 0.24),
-                width: 2,
-              ),
-            ),
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: HiGoTheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: const [
-                  BoxShadow(blurRadius: 8, color: Color(0x400E1640)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 5,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(blurRadius: 5, color: Color(0x220E1640)),
+          SizedBox(
+            width: 172,
+            height: 172,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (widget.scanning)
+                  RepaintBoundary(
+                    child: AnimatedBuilder(
+                      key: const Key('rider-scanning-animation'),
+                      animation: _pulse,
+                      builder: (context, _) => CustomPaint(
+                        key: const Key('rider-scanning-pulses'),
+                        size: const Size(172, 172),
+                        painter: RiderScanningPulsePainter(
+                          progress: _shouldAnimate ? _pulse.value : 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x400E1640),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: HiGoTheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
               ],
             ),
-            child: const Text(
-              'You · demo',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: HiGoTheme.navy,
+          ),
+          Transform.translate(
+            offset: const Offset(0, -20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 5,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 6,
+                    color: Color(0x220E1640),
+                  ),
+                ],
+              ),
+              child: const Text(
+                'You · demo',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: HiGoTheme.navy,
+                ),
               ),
             ),
           ),
@@ -170,6 +192,36 @@ class _MockRiderLocation extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Two offset expanding rings. A CustomPainter avoids rebuilding the map
+/// or driver cards on every animation frame.
+class RiderScanningPulsePainter extends CustomPainter {
+  const RiderScanningPulsePainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = math.min(size.width, size.height) * 0.48;
+    const minRadius = 22.0;
+
+    for (var index = 0; index < 2; index++) {
+      final phase = (progress + index * 0.5) % 1.0;
+      final radius = minRadius + (maxRadius - minRadius) * phase;
+      final alpha = (0.26 * (1.0 - phase)).clamp(0.0, 1.0);
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5 - phase * 1.0
+        ..color = HiGoTheme.primary.withValues(alpha: alpha);
+      canvas.drawCircle(center, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant RiderScanningPulsePainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _MockDriverMarker extends StatelessWidget {
