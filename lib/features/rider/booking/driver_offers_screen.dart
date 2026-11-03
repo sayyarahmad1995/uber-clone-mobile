@@ -413,7 +413,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
+        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
         systemNavigationBarColor: Colors.white,
@@ -426,77 +426,114 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         },
         child: Scaffold(
           backgroundColor: Colors.white,
-          // The map begins below the safe status-bar area. Keeping the
-          // Scaffold white also fills the space behind the system clock.
-          body: SafeArea(
-            bottom: false,
-            child: LayoutBuilder(
-              builder: (context, constraints) => Column(
-                children: [
-                  DriverOffersHeader(
-                    count: _offers.length,
-                    onBack: _confirmCancellation,
-                    onHelp: _showSafetyHelp,
-                  ),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: NearbyDriversMockMap(
-                            showWaitingHint: _offers.isEmpty,
-                          ),
+          body: LayoutBuilder(
+            builder: (context, constraints) => Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: NearbyDriversMockMap(
+                          scanning: _offers.isEmpty && !_selectionPending,
                         ),
-                        Positioned.fill(
-                          child: Padding(
-                            // Keep the new-offer chip clear of card actions.
-                            padding: EdgeInsets.only(
-                              bottom: _unseenOffers > 0 && !_followingLatest
-                                  ? 64
-                                  : 0,
-                            ),
-                            child: _buildOffersArea(),
-                          ),
-                        ),
-                        if (_unseenOffers > 0 && !_followingLatest)
-                          Positioned(
-                            bottom: 12,
-                            left: 0,
-                            right: 0,
-                            child: Center(
-                              child: FilledButton.icon(
-                                onPressed: _revealNewOffers,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                ),
-                                label: Text(
-                                  '$_unseenOffers new '
-                                  '${_unseenOffers == 1 ? 'offer' : 'offers'}',
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: HiGoTheme.primary,
-                                  minimumSize: const Size(0, 48),
-                                  shape: const StadiumBorder(),
-                                ),
+                      ),
+                      // Readable system icons without restoring a solid header.
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: MediaQuery.paddingOf(context).top + 75,
+                        child: const IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xEFFFFFFF),
+                                  Color(0x00FFFFFF),
+                                ],
                               ),
                             ),
                           ),
-                      ],
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: SafeArea(
+                          bottom: false,
+                          child: Column(
+                            children: [
+                              DriverOffersMapControls(
+                                onBack: _confirmCancellation,
+                                onHelp: _showSafetyHelp,
+                              ),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: Padding(
+                                        // Reserve room for the unseen-offer
+                                        // button so it never hides card actions.
+                                        padding: EdgeInsets.only(
+                                          bottom: _unseenOffers > 0 &&
+                                                  !_followingLatest
+                                              ? 64
+                                              : 0,
+                                        ),
+                                        child: _buildOffersArea(),
+                                      ),
+                                    ),
+                                    if (_unseenOffers > 0 && !_followingLatest)
+                                      Positioned(
+                                        bottom: 12,
+                                        left: 0,
+                                        right: 0,
+                                        child: Center(
+                                          child: FilledButton.icon(
+                                            onPressed: _revealNewOffers,
+                                            icon: const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                            ),
+                                            label: Text(
+                                              '$_unseenOffers new '
+                                              '${_unseenOffers == 1 ? 'offer' : 'offers'}',
+                                            ),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: HiGoTheme.primary,
+                                              minimumSize: const Size(0, 48),
+                                              shape: const StadiumBorder(),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: math.max(
+                      0.0,
+                      constraints.maxHeight -
+                          MediaQuery.paddingOf(context).top -
+                          160,
                     ),
                   ),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: math.max(0.0, constraints.maxHeight - 140),
-                    ),
-                    child: DriverOfferBottomSheet(
-                      pickup: widget.locations.pickup,
-                      destination: widget.locations.destination,
-                      proposedFarePkr: _proposedFarePkr,
-                      onIncreaseFare: _increaseFare,
-                      onCancel: _confirmCancellation,
-                    ),
+                  child: DriverOfferBottomSheet(
+                    pickup: widget.locations.pickup,
+                    destination: widget.locations.destination,
+                    proposedFarePkr: _proposedFarePkr,
+                    onIncreaseFare: _increaseFare,
+                    onCancel: _confirmCancellation,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
