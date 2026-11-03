@@ -6,6 +6,7 @@ import 'package:uberclone/features/rider/booking/driver_offers_screen.dart';
 import 'package:uberclone/features/rider/booking/location_selection_screen.dart';
 import 'package:uberclone/features/rider/booking/mock_driver_offer.dart';
 import 'package:uberclone/features/rider/booking/ride_category.dart';
+import 'package:uberclone/features/rider/booking/widgets/nearby_drivers_mock_map.dart';
 
 void main() {
   test('fare comparisons update without changing existing offers', () {
@@ -30,14 +31,19 @@ void main() {
   ) async {
     await tester.pumpWidget(_testApp());
     expect(find.text('Waiting for driver offers'), findsNothing);
-    expect(find.text('Looking for offers · Map preview'), findsOneWidget);
+    expect(find.text('Looking for offers · Map preview'), findsNothing);
+    expect(find.byTooltip('Back'), findsOneWidget);
+    expect(find.byTooltip('Safety and help'), findsOneWidget);
+    expect(find.byKey(const Key('offers-floating-controls')), findsOneWidget);
+    expect(find.byKey(const Key('rider-scanning-animation')), findsOneWidget);
     expect(find.byKey(const Key('mock-rider-location')), findsOneWidget);
     expect(find.byKey(const Key('mock-driver-1')), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
     expect(find.text('Ahmed Khan'), findsOneWidget);
-    expect(find.textContaining('1 offer · Request is live'), findsOneWidget);
+    expect(find.text('Driver offers'), findsNothing);
+    expect(find.byKey(const Key('rider-scanning-animation')), findsNothing);
     expect(find.text('View details'), findsOneWidget);
     expect(find.text('Decline'), findsOneWidget);
     expect(find.text('Choose'), findsOneWidget);
@@ -55,7 +61,7 @@ void main() {
     expect(find.text('Ahmed Khan'), findsNothing);
   });
 
-  testWidgets('status area remains white and map markers stay behind bids', (
+  testWidgets('edge-to-edge map and floating controls stay behind bids', (
     tester,
   ) async {
     await tester.pumpWidget(_testApp());
@@ -66,15 +72,59 @@ void main() {
     final statusStyle = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
       find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
     );
-    expect(statusStyle.value.statusBarColor, Colors.white);
+    expect(statusStyle.value.statusBarColor, Colors.transparent);
     expect(statusStyle.value.statusBarIconBrightness, Brightness.dark);
-    expect(tester.widget<SafeArea>(find.byType(SafeArea).first).top, isTrue);
+    expect(find.byKey(const Key('offers-floating-controls')), findsOneWidget);
+    expect(find.text('Driver offers'), findsNothing);
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
     expect(find.text('Ahmed Khan'), findsOneWidget);
     expect(find.byKey(const Key('mock-rider-location')), findsOneWidget);
     expect(find.text('Looking for offers · Map preview'), findsNothing);
+  });
+
+  testWidgets('scanning pulse expands only while waiting for offers', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp());
+
+    final pulse = find.byKey(const Key('rider-scanning-pulses'));
+    final first = (tester.widget<CustomPaint>(pulse).painter!
+            as RiderScanningPulsePainter)
+        .progress;
+    await tester.pump(const Duration(milliseconds: 450));
+    final second = (tester.widget<CustomPaint>(pulse).painter!
+            as RiderScanningPulsePainter)
+        .progress;
+    expect(second, isNot(first));
+
+    await tester.pump(const Duration(milliseconds: 1550));
+    await tester.pump();
+    expect(find.text('Ahmed Khan'), findsOneWidget);
+    expect(pulse, findsNothing);
+  });
+
+  testWidgets('reduced motion displays the rider without animating', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HiGoTheme.light,
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(390, 780),
+            disableAnimations: true,
+          ),
+          child: _testScreen(),
+        ),
+      ),
+    );
+    final pulse = tester.widget<CustomPaint>(
+      find.byKey(const Key('rider-scanning-pulses')),
+    );
+    expect((pulse.painter! as RiderScanningPulsePainter).progress, 0);
+    expect(find.byKey(const Key('mock-rider-location')), findsOneWidget);
   });
 
   testWidgets('raising rider fare preserves existing bid prices', (tester) async {
@@ -111,9 +161,9 @@ void main() {
     await tester.tap(find.text('Demo: Driver declines'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Driver offers'), findsOneWidget);
+    expect(find.byKey(const Key('offers-floating-controls')), findsOneWidget);
     expect(find.text('Ahmed Khan'), findsNothing);
-    expect(find.textContaining('Request is live'), findsOneWidget);
+    expect(find.text('Increase fare'), findsOneWidget);
   });
 
   testWidgets('unseen offers are announced when browsing older ones', (
