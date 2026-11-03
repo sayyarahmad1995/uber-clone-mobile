@@ -52,8 +52,8 @@ void main() {
     await tester.pump();
     expect(find.text('Ahmed Khan'), findsNothing);
     expect(find.text('Waiting for more offers'), findsNothing);
-    expect(find.text('Looking for offers · Map preview'), findsOneWidget);
-    expect(find.textContaining('0 offers · Request is live'), findsOneWidget);
+    expect(find.byKey(const Key('rider-scanning-animation')), findsOneWidget);
+    expect(find.text('Increase fare'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
@@ -152,14 +152,17 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Choose').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Waiting for driver confirmation'), findsOneWidget);
     expect(find.text('Demo: Driver confirms'), findsOneWidget);
     expect(find.text('Demo: Driver declines'), findsOneWidget);
 
     await tester.tap(find.text('Demo: Driver declines'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    // Do not pumpAndSettle while the empty-offers scanner repeats.
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byKey(const Key('offers-floating-controls')), findsOneWidget);
     expect(find.text('Ahmed Khan'), findsNothing);
@@ -188,6 +191,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 new offer'), findsNothing);
   });
+
   testWidgets('compact layout keeps controls available at larger text scale', (
     tester,
   ) async {
@@ -211,7 +215,6 @@ void main() {
     expect(find.text('Increase fare'), findsOneWidget);
     expect(find.text('Choose'), findsOneWidget);
   });
-
 }
 
 Widget _testApp() => MaterialApp(
