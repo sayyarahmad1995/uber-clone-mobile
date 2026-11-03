@@ -198,7 +198,7 @@ class _MockDriverMarker extends StatelessWidget {
           ],
         ),
         child: const Icon(
-          Icons.directions_car_filled_rounded,
+          Icons.directions_car,
           color: HiGoTheme.secondaryText,
           size: 24,
         ),
