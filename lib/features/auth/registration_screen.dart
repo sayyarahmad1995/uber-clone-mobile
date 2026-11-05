@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/higo_theme.dart';
 import 'widgets/auth_page.dart';
-import '../rider/home/rider_home_screen.dart';
+import 'auth_session.dart';
+import 'otp_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({
@@ -25,6 +26,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _password = TextEditingController();
 
   bool _showPassword = false;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -34,13 +36,42 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
-  void _createAccount() {
-    if (!_formKey.currentState!.validate()) return;
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
-      (route) => false,
-    );
+  Future<void> _createAccount() async {
+    if (_busy || !_formKey.currentState!.validate()) return;
+    setState(() => _busy = true);
+    try {
+      final body = {
+        'phone': widget.phoneNumber,
+        'name': _name.text,
+        'email': _email.text,
+        'password': _password.text,
+      };
+      Future<Map<String, dynamic>> issue() =>
+          authSession.request('auth/register', body: body);
+      final challenge = await issue();
+      if (!mounted) return;
+      final tokens = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (_) => OtpScreen(
+            phoneNumber: widget.phoneNumber,
+            challenge: challenge,
+            resend: issue,
+            verifyPath: 'auth/register/verify',
+          ),
+        ),
+      );
+      if (!mounted || tokens == null) return;
+      await authSession.signIn(tokens);
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -85,7 +116,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               controller: _password,
               obscureText: !_showPassword,
               decoration: InputDecoration(
-                hintText: 'Minimum 8 characters',
+                hintText: 'At least 12 characters',
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   onPressed: () {
@@ -101,20 +132,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               ),
               validator: (value) {
-                if (value == null || value.length < 8) {
-                  return 'Use at least 8 characters';
+                if (value == null || !validAuthPassword(value)) {
+                  return 'Use 12 to 128 bytes';
                 }
                 return null;
               },
             ),
             const SizedBox(height: 26),
             FilledButton(
-              onPressed: _createAccount,
-              child: const Text('Create Account'),
+              onPressed: _busy ? null : _createAccount,
+              child: Text(_busy ? 'Please wait…' : 'Send verification code'),
             ),
             const SizedBox(height: 18),
             const Text(
-              'Account creation is simulated. '
+              'Verify your phone to create your account. '
               'Terms and privacy documents will be linked '
               'before production release.',
               textAlign: TextAlign.center,

@@ -4,10 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/higo_theme.dart';
-import 'account_checking_screen.dart';
+import 'auth_session.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, required this.phoneNumber});
+  const OtpScreen({
+    super.key,
+    required this.phoneNumber,
+    required this.challenge,
+    required this.resend,
+    required this.verifyPath,
+  });
+
+  final Map<String, dynamic> challenge;
+  final Future<Map<String, dynamic>> Function() resend;
+  final String verifyPath;
 
   final String phoneNumber;
 
@@ -17,13 +27,14 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   static const int _codeLength = 6;
-  static const int _resendSeconds = 30;
+  late Map<String, dynamic> _challenge = widget.challenge;
+  bool _busy = false;
 
   final _otpController = TextEditingController();
   final _focusNode = FocusNode();
 
   Timer? _timer;
-  int _secondsRemaining = _resendSeconds;
+  int _secondsRemaining = 0;
 
   @override
   void initState() {
@@ -33,7 +44,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _startCountdown() {
     _timer?.cancel();
-    _secondsRemaining = _resendSeconds;
+    _secondsRemaining = _challenge['resend_after'] as int;
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -53,37 +64,42 @@ class _OtpScreenState extends State<OtpScreen> {
     });
   }
 
-  void _resendCode() {
+  Future<void> _perform(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await action();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resendCode() => _perform(() async {
     if (_secondsRemaining > 0) return;
-
+    final challenge = await widget.resend();
+    if (!mounted) return;
+    _challenge = challenge;
     _otpController.clear();
-
-    setState(() {
-      _startCountdown();
-    });
-
+    _startCountdown();
     _focusNode.requestFocus();
+  });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Resend simulated. No SMS was sent.')),
-    );
-  }
-
-  void _verifyCode() {
+  Future<void> _verifyCode() => _perform(() async {
     final code = _otpController.text;
-
     if (code.length != _codeLength) return;
-
     _focusNode.unfocus();
-
-    // UI prototype only.
-    // Any six-digit code is accepted at this stage.
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AccountCheckingScreen(phoneNumber: widget.phoneNumber),
-      ),
+    final proof = await authSession.request(
+      widget.verifyPath,
+      body: {'challenge': _challenge['challenge'] as String, 'code': code},
     );
-  }
+    if (mounted) Navigator.of(context).pop(proof);
+  });
 
   @override
   void dispose() {
@@ -327,7 +343,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             const SizedBox(width: 5),
 
                             TextButton(
-                              onPressed: _secondsRemaining == 0
+                              onPressed: _secondsRemaining == 0 && !_busy
                                   ? _resendCode
                                   : null,
                               style: TextButton.styleFrom(
@@ -360,8 +376,10 @@ class _OtpScreenState extends State<OtpScreen> {
                         const SizedBox(height: 32),
 
                         FilledButton(
-                          onPressed: isComplete ? _verifyCode : null,
-                          child: const Text('Verify & Continue'),
+                          onPressed: isComplete && !_busy ? _verifyCode : null,
+                          child: Text(
+                            _busy ? 'Please wait…' : 'Verify & Continue',
+                          ),
                         ),
                       ],
                     ),

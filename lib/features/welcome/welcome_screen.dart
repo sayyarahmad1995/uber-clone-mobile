@@ -131,7 +131,7 @@ class WelcomeScreen extends StatelessWidget {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               settings: const RouteSettings(name: '/phone'),
-                              builder: (_) => const PhoneScreen(),
+                              builder: (_) => const PhoneScreen(signIn: true),
                             ),
                           );
                         },

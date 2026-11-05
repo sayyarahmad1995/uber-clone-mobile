@@ -6,7 +6,7 @@ import 'become_driver_screen.dart';
 import 'personal_information_screen.dart';
 import 'rider_profile_store.dart';
 import 'saved_places_screen.dart';
-import '../../../app/app_mode_controller.dart';
+import '../../auth/auth_session.dart';
 import '../../account/app_settings_screen.dart';
 import '../../account/help_support_screen.dart';
 import '../../account/about_higo_screen.dart';
@@ -143,10 +143,20 @@ class RiderAccountScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             HiGoAccountTile(
-              icon: Icons.swap_horiz,
-              title: 'Switch to Driver',
-              subtitle: 'Open the driver interface · Development',
-              onTap: switchToDriverMode,
+              icon: Icons.logout,
+              title: 'Log Out',
+              subtitle: 'End this HiGO session',
+              onTap: () async {
+                try {
+                  await authSession.logout();
+                } catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(authErrorMessage(error))),
+                    );
+                  }
+                }
+              },
             ),
             const SizedBox(height: 10),
             Material(
