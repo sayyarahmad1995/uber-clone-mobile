@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_secure_storage: ^10.0.0
+  http: ^1.6.0
   higo_phone_input:
     git:
       url: https://github.com/sayyarahmad1995/higo_phone_input.git

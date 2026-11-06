@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../app/higo_theme.dart';
+import 'auth_session.dart';
+import 'recovery_screen.dart';
 import 'widgets/auth_page.dart';
-import '../rider/home/rider_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -21,7 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _showPassword = false;
-  bool _rememberMe = false;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -29,18 +29,40 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_password.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Enter your password.')));
-      return;
+  Future<void> _login() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final tokens = await authSession.request(
+        'auth/login',
+        body: {'phone': widget.phoneNumber, 'password': _password.text},
+      );
+      if (!mounted) return;
+      await authSession.signIn(tokens);
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+  }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
-      (route) => false,
+  Future<void> _recover() async {
+    final reset = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => RecoveryScreen(phoneNumber: widget.phoneNumber),
+      ),
     );
+    if (mounted && reset == true) {
+      _password.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password changed. Log in to continue.')),
+      );
+    }
   }
 
   @override
@@ -76,44 +98,18 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Checkbox(
-                  value: _rememberMe,
-                  activeColor: HiGoTheme.primary,
-                  onChanged: (value) {
-                    setState(() {
-                      _rememberMe = value ?? false;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Remember me', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Password recovery is not implemented yet.',
-                      ),
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Forgot password?',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _busy ? null : _recover,
+              child: const Text('Forgot password?'),
+            ),
           ),
           const SizedBox(height: 26),
-          FilledButton(onPressed: _login, child: const Text('Log In')),
+          FilledButton(
+            onPressed: _busy ? null : _login,
+            child: Text(_busy ? 'Logging in…' : 'Log In'),
+          ),
         ],
       ),
     );

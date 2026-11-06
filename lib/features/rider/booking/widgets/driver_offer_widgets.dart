@@ -340,6 +340,7 @@ class _DriverAvatar extends StatelessWidget {
 
 class DriverOfferBottomSheet extends StatelessWidget {
   const DriverOfferBottomSheet({
+    super.key,
     required this.pickup,
     required this.destination,
     required this.proposedFarePkr,

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:higo_phone_input/higo_phone_input.dart';
 
 import '../../app/higo_theme.dart';
-import 'otp_screen.dart';
+import 'login_screen.dart';
+import 'registration_screen.dart';
 
 class PhoneScreen extends StatefulWidget {
-  const PhoneScreen({super.key});
+  const PhoneScreen({super.key, this.signIn = false});
+
+  final bool signIn;
 
   @override
   State<PhoneScreen> createState() => _PhoneScreenState();
@@ -25,7 +28,17 @@ class _PhoneScreenState extends State<PhoneScreen> {
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => OtpScreen(phoneNumber: phoneNumber)),
+      MaterialPageRoute(
+        builder: (routeContext) {
+          void editPhone() => Navigator.of(routeContext).pop();
+          return widget.signIn
+              ? LoginScreen(phoneNumber: phoneNumber, onEditPhone: editPhone)
+              : RegistrationScreen(
+                  phoneNumber: phoneNumber,
+                  onEditPhone: editPhone,
+                );
+        },
+      ),
     );
   }
 
