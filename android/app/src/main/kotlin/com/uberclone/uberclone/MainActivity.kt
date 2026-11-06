@@ -16,6 +16,7 @@ class MainActivity : FlutterActivity() {
     private var pendingImage: MethodChannel.Result? = null
     private val pickerHandler = Handler(Looper.getMainLooper())
     private var activeReads = 0
+    private var pendingLimit = MAX_IMAGE_BYTES
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -28,6 +29,12 @@ class MainActivity : FlutterActivity() {
                 } else if (activeReads >= 2) {
                     result.error("picker_busy", "Document providers are still busy. Try again shortly.", null)
                 } else {
+                    val maxBytes = call.argument<Int>("maxBytes") ?: MAX_IMAGE_BYTES
+                    if (maxBytes != MAX_IMAGE_BYTES && maxBytes != 2 * MAX_IMAGE_BYTES) {
+                        result.error("invalid_limit", "Invalid document limit.", null)
+                        return@setMethodCallHandler
+                    }
+                    pendingLimit = maxBytes
                     pendingImage = result
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
@@ -59,6 +66,7 @@ class MainActivity : FlutterActivity() {
             result.error("invalid_image", "Choose an image from the document picker.", null)
             return
         }
+        val maxBytes = pendingLimit
         activeReads++
         val timeout = Runnable {
             if (pendingImage === result) {
@@ -72,13 +80,13 @@ class MainActivity : FlutterActivity() {
                 val image = contentResolver.openInputStream(uri)?.use { input ->
                     val output = ByteArrayOutputStream()
                     val buffer = ByteArray(8192)
-                    while (output.size() <= MAX_IMAGE_BYTES) {
-                        val remaining = MAX_IMAGE_BYTES + 1 - output.size()
+                    while (output.size() <= maxBytes) {
+                        val remaining = maxBytes + 1 - output.size()
                         val count = input.read(buffer, 0, minOf(buffer.size, remaining))
                         if (count == -1) break
                         output.write(buffer, 0, count)
                     }
-                    if (output.size() > MAX_IMAGE_BYTES) null else output.toByteArray()
+                    if (output.size() > maxBytes) null else output.toByteArray()
                 } ?: throw IOException("Image unavailable or oversized")
                 runOnUiThread {
                     activeReads--
@@ -93,7 +101,7 @@ class MainActivity : FlutterActivity() {
                     pickerHandler.removeCallbacks(timeout)
                     if (pendingImage !== result) return@runOnUiThread
                     pendingImage = null
-                    result.error("invalid_image", "Choose a readable image up to 1 MB.", null)
+                    result.error("invalid_image", "Choose a readable image up to ${maxBytes / MAX_IMAGE_BYTES} MB.", null)
                 }
             }
         }.start()

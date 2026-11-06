@@ -1,91 +1,10 @@
 import 'dart:convert';
-import 'dart:ui' as ui;
+import 'dart:typed_data';
 
-import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../auth/auth_session.dart';
-import 'driver_picker_cleanup_stub.dart'
-    if (dart.library.io) 'driver_picker_cleanup.dart';
-
-const _maxImageBytes = 1024 * 1024;
-
-Future<Uint8List?> _pickImage() async {
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    try {
-      return await const MethodChannel(
-        'higo/driver_documents',
-      ).invokeMethod<Uint8List>('pickImage');
-    } on PlatformException catch (error) {
-      throw AuthError(error.message ?? 'Unable to select an image.');
-    }
-  }
-  const images = XTypeGroup(
-    label: 'JPEG or PNG',
-    extensions: ['jpg', 'jpeg', 'png'],
-    mimeTypes: ['image/jpeg', 'image/png'],
-    uniformTypeIdentifiers: ['public.jpeg', 'public.png'],
-  );
-  final file = await openFile(acceptedTypeGroups: [images]);
-  if (file == null) return null;
-  try {
-    if (await file.length() > _maxImageBytes) {
-      throw const AuthError('Choose an image under 1 MB.');
-    }
-    return await file.readAsBytes();
-  } finally {
-    await removeImportedDriverImage(file.path);
-  }
-}
-
-Future<Uint8List> _prepareImage(Uint8List bytes) async {
-  if (bytes.isEmpty || bytes.length > _maxImageBytes) {
-    throw const AuthError('Choose a JPEG or PNG of up to 1 MB.');
-  }
-  final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-  try {
-    final descriptor = await ui.ImageDescriptor.encoded(buffer);
-    try {
-      final width = descriptor.width;
-      final height = descriptor.height;
-      if (width > 4096 || height > 4096 || width * height > 8000000) {
-        throw const AuthError(
-          'Choose an image no larger than 4096 pixels per side and 8 megapixels.',
-        );
-      }
-      if (width <= 2048 && height <= 2048) return bytes;
-      final codec = await descriptor.instantiateCodec(
-        targetWidth: width >= height ? 2048 : null,
-        targetHeight: height > width ? 2048 : null,
-      );
-      try {
-        final image = (await codec.getNextFrame()).image;
-        try {
-          final resized = (await image.toByteData(
-            format: ui.ImageByteFormat.png,
-          ))?.buffer.asUint8List();
-          return resized != null && resized.length < bytes.length
-              ? resized
-              : bytes;
-        } finally {
-          image.dispose();
-        }
-      } finally {
-        codec.dispose();
-      }
-    } finally {
-      descriptor.dispose();
-    }
-  } on AuthError {
-    rethrow;
-  } catch (_) {
-    throw const AuthError('Choose a readable JPEG or PNG.');
-  } finally {
-    buffer.dispose();
-  }
-}
+import 'driver_document_picker.dart';
 
 class DriverIdentityScreen extends StatefulWidget {
   const DriverIdentityScreen({super.key, this.session, this.pickImage});
@@ -154,11 +73,16 @@ class _DriverIdentityScreenState extends State<DriverIdentityScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final image = await (widget.pickImage ?? _pickImage)();
+      final image =
+          await (widget.pickImage ??
+              () => pickDriverDocument(identityDocumentMaxBytes))();
       if (!mounted || image == null || _session.user?['id'] != _accountId) {
         return;
       }
-      final prepared = await _prepareImage(image);
+      final prepared = await prepareDriverDocument(
+        image,
+        identityDocumentMaxBytes,
+      );
       if (!mounted || _session.user?['id'] != _accountId) return;
       if (front) {
         _front = prepared;

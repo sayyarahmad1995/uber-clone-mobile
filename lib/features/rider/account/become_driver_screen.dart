@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../driver/account/driver_identity_screen.dart';
+import '../../driver/vehicles/my_vehicles_screen.dart';
 
 import '../../../app/higo_theme.dart';
 
@@ -129,6 +130,14 @@ class BecomeDriverScreen extends StatelessWidget {
                 ),
               ),
 
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MyVehiclesScreen(),
+                  ),
+                ),
+                child: const Text('My Vehicles'),
+              ),
               const SizedBox(height: 6),
 
               const Text(
