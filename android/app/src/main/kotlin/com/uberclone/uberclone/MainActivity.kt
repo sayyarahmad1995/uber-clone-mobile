@@ -2,6 +2,7 @@ package com.uberclone.uberclone
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ContentResolver
 import android.content.Intent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -45,6 +46,11 @@ class MainActivity : FlutterActivity() {
         if (resultCode != Activity.RESULT_OK || uri == null) {
             pendingImage = null
             result.success(null)
+            return
+        }
+        if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
+            pendingImage = null
+            result.error("invalid_image", "Choose an image from the document picker.", null)
             return
         }
         Thread {
