@@ -32,7 +32,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    Future<void> tap(Finder finder, {bool network = false}) async {
+    Future<void> tap(
+      Finder finder, {
+      bool network = false,
+      bool settle = true,
+    }) async {
       await tester.pump();
       await tester.ensureVisible(finder);
       if (network) {
@@ -43,7 +47,7 @@ void main() {
       } else {
         await tester.tap(finder);
       }
-      await tester.pumpAndSettle();
+      if (settle) await tester.pumpAndSettle();
     }
 
     Future<void> waitFor(Finder finder) async {
@@ -136,7 +140,7 @@ void main() {
     await waitFor(find.text('Choose CNIC front'));
     await tap(find.text('Choose CNIC front'));
     await tap(find.text('Choose CNIC back'));
-    await tap(find.text('Submit identity'), network: true);
+    await tap(find.text('Submit identity'), network: true, settle: false);
     await waitFor(find.text('Identity submitted · Version 1'));
     await tester.pageBack();
     await tester.pumpAndSettle();
