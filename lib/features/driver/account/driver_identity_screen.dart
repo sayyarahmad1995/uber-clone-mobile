@@ -147,8 +147,12 @@ class _DriverIdentityScreenState extends State<DriverIdentityScreen> {
         if (_submission == null && !_busy)
           TextButton(onPressed: _load, child: const Text('Retry')),
         if (_submission != null) ...[
-          if (_submission?['status'] == 'submitted')
-            Text('Identity submitted · Version ${_submission!['version']}'),
+          if (_submission?['version'] != null)
+            Text(
+              'Identity ${_submission!['status']} · Version ${_submission!['version']}',
+            ),
+          if (_submission?['rejection_reason'] case final String reason)
+            if (reason.isNotEmpty) Text('Reason: $reason'),
           const Text(
             'Enter your legal name and upload both sides of your CNIC. Use a JPEG or PNG of up to 1 MB per side.',
           ),
