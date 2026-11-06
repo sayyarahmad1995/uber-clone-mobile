@@ -41,7 +41,7 @@ class AuthSession extends ChangeNotifier {
     String path, {
     Map<String, String>? body,
     String? bearer,
-    bool get = false,
+    String method = 'POST',
   }) async {
     final loopback = [
       '127.0.0.1',
@@ -53,10 +53,8 @@ class AuthSession extends ChangeNotifier {
             !(kDebugMode && loopback && _base.scheme == 'http'))) {
       throw const AuthError('Configure a valid HiGO API URL.');
     }
-    final request = http.Request(
-      get ? 'GET' : 'POST',
-      _base.resolve('/api/v1/$path'),
-    )..followRedirects = false;
+    final request = http.Request(method, _base.resolve('/api/v1/$path'))
+      ..followRedirects = false;
     if (bearer != null) request.headers['Authorization'] = 'Bearer $bearer';
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
@@ -96,7 +94,7 @@ class AuthSession extends ChangeNotifier {
     final profile = await request(
       'me',
       bearer: tokens['access_token'] as String,
-      get: true,
+      method: 'GET',
     );
     await _changeSession(() async {
       if (attempt != _signInAttempt) return;
@@ -146,16 +144,39 @@ class AuthSession extends ChangeNotifier {
     await (_refreshing ??= _rotate().whenComplete(() => _refreshing = null));
   }
 
-  Future<Map<String, dynamic>> currentUser() async {
+  Future<Map<String, dynamic>> currentUser() => _requestCurrentUser();
+
+  Future<Map<String, dynamic>> _requestCurrentUser({
+    Map<String, String>? update,
+  }) async {
+    Future<Map<String, dynamic>> send(String? token) => request(
+      'me',
+      method: update == null ? 'GET' : 'PATCH',
+      bearer: token,
+      body: update,
+    );
     if (_access == null) await _ensureAccess();
     final access = _access;
     try {
-      return await request('me', bearer: access, get: true);
+      return await send(access);
     } on AuthError catch (error) {
       if (error.status != 401) rethrow;
       if (_access == access) await _ensureAccess();
-      return request('me', bearer: _access, get: true);
+      return send(_access);
     }
+  }
+
+  Future<void> updateProfile({String? name, String? email}) {
+    final fields = {'name': ?name, 'email': ?email};
+    if (fields.isEmpty) return Future.value();
+    final accountId = user?['id'];
+    return _changeSession(() async {
+      if (accountId == null || user?['id'] != accountId) {
+        throw const AuthError('Please log in again.', 401);
+      }
+      user = await _requestCurrentUser(update: fields);
+      notifyListeners();
+    });
   }
 
   Future<void> logout() => _loggingOut ??= _changeSession(
