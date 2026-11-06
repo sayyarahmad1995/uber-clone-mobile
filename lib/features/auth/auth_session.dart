@@ -148,10 +148,12 @@ class AuthSession extends ChangeNotifier {
 
   Future<Map<String, dynamic>> _requestCurrentUser({
     Map<String, String>? update,
+    String path = 'me',
+    String? method,
   }) async {
     Future<Map<String, dynamic>> send(String? token) => request(
-      'me',
-      method: update == null ? 'GET' : 'PATCH',
+      path,
+      method: method ?? (update == null ? 'GET' : 'PATCH'),
       bearer: token,
       body: update,
     );
@@ -175,6 +177,24 @@ class AuthSession extends ChangeNotifier {
         throw const AuthError('Please log in again.', 401);
       }
       user = await _requestCurrentUser(update: fields);
+      notifyListeners();
+    });
+  }
+
+  Future<void> requestEmailVerification(String email, String password) =>
+      _emailAction('me/email/request', {'email': email, 'password': password});
+
+  Future<void> verifyEmail(String code) =>
+      _emailAction('me/email/verify', {'code': code});
+
+  Future<void> _emailAction(String path, Map<String, String> body) {
+    final accountId = user?['id'];
+    return _changeSession(() async {
+      if (accountId == null || user?['id'] != accountId) {
+        throw const AuthError('Please log in again.', 401);
+      }
+      await _requestCurrentUser(update: body, path: path, method: 'POST');
+      user = await currentUser();
       notifyListeners();
     });
   }

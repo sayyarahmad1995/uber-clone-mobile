@@ -101,6 +101,20 @@ void main() {
     await waitFor(find.text(updatedEmail));
     expect(find.text(updatedName), findsWidgets);
     expect(find.text(phone), findsOneWidget);
+    expect(find.text('Unverified'), findsOneWidget);
+    await tap(find.text('Verify email'));
+    await tester.enterText(find.byType(EditableText).at(1), oldPassword);
+    await tap(find.text('Send code'), network: true);
+    await waitFor(find.text('Code from email'));
+    final emailCode = await tester.runAsync(() async {
+      final log = await File(smsLog).readAsString();
+      return RegExp(
+        r'LOCAL EMAIL [^:]+: (em_[A-Za-z0-9_-]+)',
+      ).allMatches(log).last.group(1);
+    });
+    await tester.enterText(find.byType(EditableText).at(2), emailCode!);
+    await tap(find.widgetWithText(FilledButton, 'Verify email'), network: true);
+    await waitFor(find.text('Verified'));
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text(updatedName), findsOneWidget);
@@ -115,6 +129,7 @@ void main() {
       expect(restored.user?['phone'], phone);
       expect(restored.user?['name'], updatedName);
       expect(restored.user?['email'], updatedEmail);
+      expect(restored.user?['email_verified'], isTrue);
       await restored.logout();
       await authSession.restore();
     });
