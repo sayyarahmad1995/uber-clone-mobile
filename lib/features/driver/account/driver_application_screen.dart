@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -149,11 +148,12 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
             : authErrorMessage(error);
       }
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _uploading = null;
         });
+      }
     }
   }
 
@@ -617,8 +617,9 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
   String? _validateVehicle(String key, String value) {
     if (key == 'manufacture_year') {
       final year = int.tryParse(value);
-      if (year == null || year < 1900 || year > DateTime.now().year + 1)
+      if (year == null || year < 1900 || year > DateTime.now().year + 1) {
         return 'Enter a valid manufacturing year.';
+      }
     } else if (key == 'registration_number') {
       if (!RegExp(
         r'^[A-Z0-9][A-Z0-9 -]{1,23}$',
@@ -875,8 +876,9 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
     return PopScope(
       canPop: !_busy && (!wizard || _step == 0),
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && wizard && !_busy && _step > 0)
+        if (!didPop && wizard && !_busy && _step > 0) {
           unawaited(_goTo(_step - 1));
+        }
       },
       child: Scaffold(
         appBar: AppBar(

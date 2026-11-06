@@ -64,13 +64,15 @@ class _Api {
         case 'GET $_path':
           break;
         case 'PATCH $_path':
-          if (data['revision'] != draft['revision'])
+          if (data['revision'] != draft['revision']) {
             return response({'error': 'onboarding_conflict'}, 409);
+          }
           draft.addAll(data.cast<String, String>());
           change();
         case 'POST $_path/document':
-          if (data['draft_revision'] != draft['revision'])
+          if (data['draft_revision'] != draft['revision']) {
             return response({'error': 'onboarding_conflict'}, 409);
+          }
           final kind = data['kind'] as String;
           expect(data['image'], _image);
           documents.add(kind);
@@ -88,8 +90,9 @@ class _Api {
           documents.remove('additional');
           change();
         case 'POST $_path':
-          if (data['draft_revision'] != draft['revision'])
+          if (data['draft_revision'] != draft['revision']) {
             return response({'error': 'onboarding_conflict'}, 409);
+          }
           expect(data['confirmed'], true);
           expect(documents, containsAll(_mandatory));
           submitted++;
@@ -127,12 +130,13 @@ void main() {
 
   Future<void> click(WidgetTester tester, String label) async {
     final item = find.text(label);
-    if (item.evaluate().isEmpty)
+    if (item.evaluate().isEmpty) {
       await tester.scrollUntilVisible(
         item,
         180,
         scrollable: find.byType(Scrollable).first,
       );
+    }
     await tester.ensureVisible(item);
     await tester.pumpAndSettle();
     await tester.tap(item);
