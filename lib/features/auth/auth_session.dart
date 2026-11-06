@@ -193,8 +193,11 @@ class AuthSession extends ChangeNotifier {
       if (accountId == null || user?['id'] != accountId) {
         throw const AuthError('Please log in again.', 401);
       }
-      await _requestCurrentUser(update: body, path: path, method: 'POST');
-      user = await currentUser();
+      user = await _requestCurrentUser(
+        update: body,
+        path: path,
+        method: 'POST',
+      );
       notifyListeners();
     });
   }

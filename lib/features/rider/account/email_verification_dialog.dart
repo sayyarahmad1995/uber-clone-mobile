@@ -45,7 +45,14 @@ class _EmailVerificationDialogState extends State<EmailVerificationDialog> {
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _message = authErrorMessage(error));
+      if (!mounted) return;
+      if (error is AuthError &&
+          error.status == 401 &&
+          !authSession.authenticated) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        return;
+      }
+      setState(() => _message = authErrorMessage(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
