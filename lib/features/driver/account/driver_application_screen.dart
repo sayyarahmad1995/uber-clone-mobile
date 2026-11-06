@@ -335,9 +335,9 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final underReview = _application?['status'] == 'under_review';
-    final title = underReview
-        ? 'Application Under Review'
+    final pendingReview = _application?['status'] == 'pending_review';
+    final title = pendingReview
+        ? 'Application Pending Review'
         : const [
             'Driver Details',
             'Vehicle Details',
@@ -354,7 +354,7 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
               )
             : SafeArea(
                 child: ListView(
-                  key: ValueKey(underReview ? 'under_review' : _step),
+                  key: ValueKey(pendingReview ? 'pending_review' : _step),
                   padding: const EdgeInsets.all(20),
                   children: [
                     if (_busy) const LinearProgressIndicator(),
@@ -365,7 +365,7 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
                         child: const Text('Refresh application'),
                       ),
                     ],
-                    if (underReview) ...[
+                    if (pendingReview) ...[
                       const Text(
                         'Your application has been submitted for review.',
                       ),
@@ -377,7 +377,7 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
                       ..._stepContent()
                     else if (!_busy)
                       TextButton(onPressed: _load, child: const Text('Retry')),
-                    if (!underReview && _application != null && _step > 0)
+                    if (!pendingReview && _application != null && _step > 0)
                       TextButton(
                         onPressed: _busy ? null : _back,
                         child: const Text('Previous step'),

@@ -67,7 +67,7 @@ class _ApplicationApi {
           expect(data.keys, ['draft_revision']);
           expect(draft['identity_saved'], 'true');
           expect(draft['vehicle_saved'], 'true');
-          status = 'under_review';
+          status = 'pending_review';
           bumpRevision();
         default:
           fail('Unexpected API request: $command');
@@ -194,14 +194,14 @@ void main() {
       expect(api.status, 'draft');
 
       await tap(tester, 'Submit for Review');
-      expect(find.text('Application Under Review'), findsOneWidget);
+      expect(find.text('Application Pending Review'), findsOneWidget);
       expect(api.requests.where((entry) => entry.startsWith('POST')), [
         'POST $_application/identity-documents',
         'POST $_application/vehicle-documents',
         'POST $_application',
       ]);
       await open(tester, restored);
-      expect(find.text('Application Under Review'), findsOneWidget);
+      expect(find.text('Application Pending Review'), findsOneWidget);
       expect(find.text('Submit for Review'), findsNothing);
     },
   );
@@ -237,6 +237,6 @@ void main() {
     expect(find.text('Refresh application'), findsNothing);
     api.incomplete = false;
     await tap(tester, 'Submit for Review');
-    expect(find.text('Application Under Review'), findsOneWidget);
+    expect(find.text('Application Pending Review'), findsOneWidget);
   });
 }

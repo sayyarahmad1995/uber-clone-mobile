@@ -205,7 +205,7 @@ void main() {
     await waitFor(find.text('Review & Submit'));
     expect(find.text('Registration: ABC-123'), findsOneWidget);
     await tap(find.text('Submit for Review'), network: true, settle: false);
-    await waitFor(find.text('Application Under Review'));
+    await waitFor(find.text('Application Pending Review'));
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -223,7 +223,7 @@ void main() {
       final application = await restored.driverApplication(
         accountId: restored.user?['id'],
       );
-      expect(application['status'], 'under_review');
+      expect(application['status'], 'pending_review');
       final draft = application['draft'] as Map<String, dynamic>;
       expect(draft['registration_number'], 'ABC-123');
       expect(draft['identity_saved'], 'true');
