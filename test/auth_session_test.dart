@@ -89,11 +89,9 @@ void main() {
     final owner = session.user?['id'];
     await session.signIn({'access_token': 'second', 'refresh_token': 'two'});
     await expectLater(
-      session.saveDriverApplicationDocuments(
-        {'cnic_front': 'test'},
-        accountId: owner,
-        identity: true,
-      ),
+      session.saveDriverApplicationDocument({
+        'cnic_front': 'test',
+      }, accountId: owner),
       throwsA(isA<AuthError>()),
     );
     expect(session.user?['id'], 2);

@@ -17,6 +17,7 @@ dependencies:
       url: https://github.com/sayyarahmad1995/higo_phone_input.git
       ref: main
   file_selector: 1.1.0
+  image_picker: 1.2.1
 
 dev_dependencies:
   flutter_test:

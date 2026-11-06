@@ -435,10 +435,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
                           ApprovedVehicleSelector(
                             onManageVehicles: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const DriverApplicationScreen(),
+                              final navigator = Navigator.of(context);
+                              navigator.push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => DriverApplicationScreen(
+                                    onBackToAccount: () {
+                                      navigator.pop();
+                                      widget.onAccountTap();
+                                    },
+                                  ),
                                 ),
                               );
                             },
