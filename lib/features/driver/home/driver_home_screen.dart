@@ -9,7 +9,7 @@ import '../bidding/active_bids_screen.dart';
 import '../trip/driver_assignment_navigation.dart';
 import '../../../shared/widgets/higo_home_header.dart';
 import 'widgets/approved_vehicle_selector.dart';
-import '../vehicles/my_vehicles_screen.dart';
+import '../account/driver_application_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key, required this.onAccountTap});
@@ -437,7 +437,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                             onManageVehicles: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => const MyVehiclesScreen(),
+                                  builder: (_) =>
+                                      const DriverApplicationScreen(),
                                 ),
                               );
                             },

@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uberclone/app/app.dart';
-import 'package:uberclone/features/driver/account/driver_identity_screen.dart';
-import 'package:uberclone/features/driver/vehicles/add_vehicle_screen.dart';
-import 'package:uberclone/features/driver/vehicles/my_vehicles_screen.dart';
+import 'package:uberclone/features/driver/account/driver_application_screen.dart';
 import 'package:uberclone/features/auth/auth_session.dart';
 import 'package:uberclone/features/rider/home/rider_shell.dart';
 
@@ -131,33 +129,27 @@ void main() {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC',
     );
     final shellContext = tester.element(find.byType(RiderShell));
-    await tester.runAsync(() async {
-      Navigator.of(shellContext).push<void>(
-        MaterialPageRoute(
-          builder: (_) =>
-              DriverIdentityScreen(pickImage: () async => identityImage),
-        ),
-      );
-    });
-    await waitFor(find.text('Choose CNIC front'));
-    await tap(find.text('Choose CNIC front'), network: true, settle: false);
-    await waitFor(find.text('Replace CNIC front'));
-    await tap(find.text('Choose CNIC back'), network: true, settle: false);
-    await waitFor(find.text('Replace CNIC back'));
-    await tap(find.text('Submit identity'), network: true, settle: false);
-    await waitFor(find.text('Identity submitted · Version 1'));
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    Future<void> openDriverApplication() async {
+      await tester.runAsync(() async {
+        Navigator.of(shellContext).push<void>(
+          MaterialPageRoute(
+            builder: (_) => DriverApplicationScreen(
+              pickDocument: (_) async => identityImage,
+            ),
+          ),
+        );
+      });
+      await tester.runAsync(() async {
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      });
+    }
 
-    await tester.runAsync(() async {
-      Navigator.of(shellContext).push<bool>(
-        MaterialPageRoute(
-          builder: (_) =>
-              AddVehicleScreen(pickDocument: () async => identityImage),
-        ),
-      );
-    });
-    await waitFor(find.text('Add Vehicle'));
+    await openDriverApplication();
+    await waitFor(find.text('Driver Details'));
+    expect(find.text(updatedName), findsWidgets);
+    await tap(find.text('Save and continue'), network: true, settle: false);
+    await waitFor(find.text('Vehicle Details'));
     final vehicleFields = find.byType(EditableText);
     for (final (index, value) in [
       'Toyota',
@@ -168,27 +160,52 @@ void main() {
     ].indexed) {
       await tester.enterText(vehicleFields.at(index), value);
     }
-    await tap(
-      find.text('Choose registration document'),
-      network: true,
-      settle: false,
+    await tap(find.text('Save and continue'), network: true, settle: false);
+    await waitFor(find.text('Upload Documents'));
+    Future<void> choose(String label) async {
+      final choice = find.text('Choose $label');
+      await tester.scrollUntilVisible(choice, 120);
+      await tap(choice, network: true, settle: false);
+      await waitFor(find.text('Replace $label'));
+    }
+
+    await choose('CNIC front');
+    await choose('CNIC back');
+    await tap(find.text('Save CNIC images'), network: true, settle: false);
+    await waitFor(find.text('Both images saved'));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await openDriverApplication();
+    await waitFor(find.text('Upload Documents'));
+    await waitFor(find.text('Both images saved'));
+    await choose('Vehicle registration');
+    await choose('Vehicle insurance');
+    await tap(find.text('Save vehicle images'), network: true, settle: false);
+    final continueButton = find.widgetWithText(
+      FilledButton,
+      'Continue to review',
     );
-    await waitFor(find.text('Replace registration document'));
-    await tap(
-      find.text('Choose insurance document'),
-      network: true,
-      settle: false,
-    );
-    await waitFor(find.text('Replace insurance document'));
-    await tap(find.text('Submit vehicle'), network: true, settle: false);
-    await waitFor(find.byType(RiderShell));
-    await tester.runAsync(() async {
-      Navigator.of(
-        shellContext,
-      ).push<void>(MaterialPageRoute(builder: (_) => const MyVehiclesScreen()));
-    });
-    await waitFor(find.text('Toyota Corolla'));
-    expect(find.text('ABC-123 · Submitted · Version 1'), findsOneWidget);
+    await tester.scrollUntilVisible(continueButton, 120);
+    for (var attempt = 0; attempt < 100; attempt++) {
+      if (tester.widget<FilledButton>(continueButton).onPressed != null) break;
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+    }
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+    await tap(continueButton, network: true, settle: false);
+    await waitFor(find.text('Review & Submit'));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Reopening reloads the same saved application draft through the Go API.
+    await openDriverApplication();
+    await waitFor(find.text('Review & Submit'));
+    expect(find.text('Registration: ABC-123'), findsOneWidget);
+    await tap(find.text('Submit for Review'), network: true, settle: false);
+    await waitFor(find.text('Application Under Review'));
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -203,16 +220,14 @@ void main() {
       expect(restored.user?['name'], updatedName);
       expect(restored.user?['email'], updatedEmail);
       expect(restored.user?['email_verified'], isTrue);
-      final identity = await restored.driverIdentitySubmission(
+      final application = await restored.driverApplication(
         accountId: restored.user?['id'],
       );
-      expect(identity['version'], 1);
-      expect(identity['status'], 'submitted');
-      final vehicles = await restored.vehicles(accountId: restored.user?['id']);
-      expect(
-        (vehicles['vehicles'] as List).single['registration_number'],
-        'ABC-123',
-      );
+      expect(application['status'], 'under_review');
+      final draft = application['draft'] as Map<String, dynamic>;
+      expect(draft['registration_number'], 'ABC-123');
+      expect(draft['identity_saved'], 'true');
+      expect(draft['vehicle_saved'], 'true');
       await restored.logout();
       await authSession.restore();
     });

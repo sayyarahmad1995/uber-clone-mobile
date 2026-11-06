@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../driver/account/driver_identity_screen.dart';
-import '../../driver/vehicles/my_vehicles_screen.dart';
+import '../../driver/account/driver_application_screen.dart';
 
 import '../../../app/higo_theme.dart';
 
@@ -98,13 +97,13 @@ class BecomeDriverScreen extends StatelessWidget {
                       const _InfoRow(
                         icon: Icons.description_outlined,
                         title: 'Documents',
-                        subtitle: 'CNIC front and back for identity submission',
+                        subtitle: 'CNIC, vehicle registration, and insurance',
                       ),
 
                       const SizedBox(height: 16),
 
                       const Text(
-                        'Vehicle details and review follow the identity step.',
+                        'Your progress is saved as you complete each step.',
                         style: TextStyle(
                           fontSize: 11,
                           height: 1.4,
@@ -123,27 +122,11 @@ class BecomeDriverScreen extends StatelessWidget {
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const DriverIdentityScreen(),
+                      builder: (_) => const DriverApplicationScreen(),
                     ),
                   ),
-                  child: const Text('Start identity submission'),
+                  child: const Text('Open driver application'),
                 ),
-              ),
-
-              OutlinedButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const MyVehiclesScreen(),
-                  ),
-                ),
-                child: const Text('My Vehicles'),
-              ),
-              const SizedBox(height: 6),
-
-              const Text(
-                'Identity submission is the first step.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: HiGoTheme.secondaryText),
               ),
             ],
           ),
