@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/higo_theme.dart';
 import '../mock_driver_offer.dart';
-
 /// Map overlay controls. There is intentionally no opaque app bar or title.
 class DriverOffersMapControls extends StatelessWidget {
   const DriverOffersMapControls({
@@ -62,7 +61,10 @@ class _MapControlButton extends StatelessWidget {
           icon,
           color: tooltip == 'Back' ? HiGoTheme.navy : HiGoTheme.primary,
         ),
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        constraints: const BoxConstraints(
+          minWidth: 48,
+          minHeight: 48,
+        ),
       ),
     );
   }
@@ -214,7 +216,9 @@ class DriverOfferCard extends StatelessWidget {
                             ? const Color(0xFF079C5C)
                             : HiGoTheme.secondaryText,
                         fontSize: 11,
-                        fontWeight: matches ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: matches
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -320,9 +324,8 @@ class _DriverAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: 28,
       backgroundColor: const Color(0xFFEDEEFF),
-      foregroundImage: offer.photoAsset == null
-          ? null
-          : AssetImage(offer.photoAsset!),
+      foregroundImage:
+          offer.photoAsset == null ? null : AssetImage(offer.photoAsset!),
       child: Text(
         initials,
         style: const TextStyle(
@@ -377,7 +380,10 @@ class DriverOfferBottomSheet extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: HiGoTheme.primary),
+                    const Icon(
+                      Icons.location_on,
+                      color: HiGoTheme.primary,
+                    ),
                     const SizedBox(width: 9),
                     Expanded(
                       child: Text(
@@ -397,8 +403,7 @@ class DriverOfferBottomSheet extends StatelessWidget {
               const SizedBox(height: 14),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final compact =
-                      constraints.maxWidth < 345 ||
+                  final compact = constraints.maxWidth < 345 ||
                       MediaQuery.textScalerOf(context).scale(14) > 18;
                   final fare = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +434,11 @@ class DriverOfferBottomSheet extends StatelessWidget {
                   if (compact) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [fare, const SizedBox(height: 8), button],
+                      children: [
+                        fare,
+                        const SizedBox(height: 8),
+                        button,
+                      ],
                     );
                   }
                   return Row(
@@ -444,7 +453,10 @@ class DriverOfferBottomSheet extends StatelessWidget {
               const SizedBox(height: 8),
               const Text(
                 'Earlier offers remain available.',
-                style: TextStyle(color: HiGoTheme.secondaryText, fontSize: 12),
+                style: TextStyle(
+                  color: HiGoTheme.secondaryText,
+                  fontSize: 12,
+                ),
               ),
               const Divider(height: 26, color: HiGoTheme.border),
               TextButton(
