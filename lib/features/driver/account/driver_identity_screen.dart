@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../auth/auth_session.dart';
 import 'driver_picker_cleanup_stub.dart'
@@ -11,6 +12,15 @@ import 'driver_picker_cleanup_stub.dart'
 const _maxImageBytes = 1024 * 1024;
 
 Future<Uint8List?> _pickImage() async {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      return await const MethodChannel(
+        'higo/driver_documents',
+      ).invokeMethod<Uint8List>('pickImage');
+    } on PlatformException catch (error) {
+      throw AuthError(error.message ?? 'Unable to select an image.');
+    }
+  }
   const images = XTypeGroup(
     label: 'JPEG or PNG',
     extensions: ['jpg', 'jpeg', 'png'],
