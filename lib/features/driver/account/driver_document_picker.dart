@@ -4,6 +4,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart'
+    show CameraDevice, ImagePicker, ImageSource;
 
 import '../../auth/auth_session.dart';
 import 'driver_picker_cleanup_stub.dart'
@@ -84,5 +86,38 @@ Future<Uint8List> prepareDriverDocument(Uint8List bytes, int maxBytes) async {
     throw const AuthError('Choose a readable JPEG or PNG.');
   } finally {
     buffer.dispose();
+  }
+}
+
+Future<Uint8List?> captureDriverSelfie(int maxBytes) async {
+  if (kIsWeb ||
+      (defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.iOS)) {
+    throw const AuthError(
+      'Use HiGO on an Android or iOS device to take a selfie.',
+    );
+  }
+  try {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      maxWidth: 1440,
+      maxHeight: 1440,
+      imageQuality: 85,
+      requestFullMetadata: false,
+    );
+    if (photo == null) return null;
+    try {
+      if (await photo.length() > maxBytes) {
+        throw const AuthError('Retake the selfie to fit within 2 MB.');
+      }
+      return await photo.readAsBytes();
+    } finally {
+      await removeCapturedDriverSelfie(photo.path);
+    }
+  } on PlatformException {
+    throw const AuthError(
+      'Unable to open the camera. Check camera permissions and try again.',
+    );
   }
 }

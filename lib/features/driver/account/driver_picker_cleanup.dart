@@ -8,3 +8,11 @@ Future<void> removeImportedDriverImage(String path) async {
     if (await copy.exists()) await copy.delete();
   }
 }
+
+Future<void> removeCapturedDriverSelfie(String path) async {
+  try {
+    await File(path).delete();
+  } on FileSystemException {
+    // Camera files live in the operating system's temporary cache.
+  }
+}

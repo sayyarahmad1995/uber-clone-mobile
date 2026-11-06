@@ -135,6 +135,7 @@ void main() {
           MaterialPageRoute(
             builder: (_) => DriverApplicationScreen(
               pickDocument: (_) async => identityImage,
+              captureSelfie: (_) async => identityImage,
             ),
           ),
         );
@@ -145,10 +146,66 @@ void main() {
       });
     }
 
+    Future<void> reveal(Finder finder) async {
+      if (finder.evaluate().isEmpty) {
+        await tester.scrollUntilVisible(
+          finder,
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
+      }
+      await tester.ensureVisible(finder);
+      await tester.pump();
+    }
+
+    Future<void> onboardingDate(String label, String value) async {
+      final field = find.byKey(ValueKey(label));
+      await reveal(field);
+      await tap(field);
+      await tap(find.byIcon(Icons.edit_outlined));
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(DatePickerDialog),
+          matching: find.byType(TextField),
+        ),
+        value,
+      );
+      await tap(find.text('OK'));
+    }
+
+    Future<void> upload(String label) async {
+      final choose = find.text('Choose $label');
+      await reveal(choose);
+      await tap(choose, network: true, settle: false);
+      final save = find.text('Save $label');
+      await waitFor(save);
+      await reveal(save);
+      await tap(save, network: true, settle: false);
+      for (
+        var attempt = 0;
+        attempt < 100 && save.evaluate().isNotEmpty;
+        attempt++
+      ) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
+      expect(save, findsNothing);
+      expect(find.text('Preview $label'), findsOneWidget);
+    }
+
     await openDriverApplication();
     await waitFor(find.text('Driver Details'));
     expect(find.text(updatedName), findsWidgets);
-    await tap(find.text('Save and continue'), network: true, settle: false);
+    await tap(find.text('Take selfie'), network: true, settle: false);
+    await waitFor(find.text('Retake selfie'));
+    await onboardingDate('date-date_of_birth', '01/01/1990');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'CNIC Number'),
+      '1234512345671',
+    );
+    await tap(find.text('Next'), network: true, settle: false);
     await waitFor(find.text('Vehicle Details'));
     final vehicleFields = find.byType(EditableText);
     for (final (index, value) in [
@@ -160,54 +217,53 @@ void main() {
     ].indexed) {
       await tester.enterText(vehicleFields.at(index), value);
     }
-    await tap(find.text('Save and continue'), network: true, settle: false);
+    await tap(find.text('Next'), network: true, settle: false);
     await waitFor(find.text('Upload Documents'));
-    Future<void> choose(String label) async {
-      final choice = find.text('Choose $label');
-      await tester.scrollUntilVisible(choice, 120);
-      await tap(choice, network: true, settle: false);
-      await waitFor(find.text('Replace $label'));
-    }
-
-    await choose('CNIC front');
-    await choose('CNIC back');
-    await tap(find.text('Save CNIC images'), network: true, settle: false);
-    await waitFor(find.text('Both images saved'));
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await upload('CNIC Front');
+    await tap(find.text('Save & exit'), network: true, settle: false);
+    await waitFor(find.byType(RiderShell));
 
     await openDriverApplication();
     await waitFor(find.text('Upload Documents'));
-    await waitFor(find.text('Both images saved'));
-    await choose('Vehicle registration');
-    await choose('Vehicle insurance');
-    await tap(find.text('Save vehicle images'), network: true, settle: false);
-    final continueButton = find.widgetWithText(
-      FilledButton,
-      'Continue to review',
+    expect(find.text('Preview CNIC Front'), findsOneWidget);
+    await upload('CNIC Back');
+    await reveal(find.byKey(const ValueKey('validity-cnic')));
+    await tap(find.byKey(const ValueKey('validity-cnic')));
+    await tap(find.text('Lifetime').last);
+    await upload('Driving License Front');
+    await upload('Driving License Back');
+    await onboardingDate('date-license_expiry', '01/01/2050');
+    await upload('Vehicle Registration');
+    await reveal(find.byKey(const ValueKey('validity-registration')));
+    await tap(find.byKey(const ValueKey('validity-registration')));
+    await tap(find.text('No expiry').last);
+    for (final label in [
+      'Vehicle Front — Exterior',
+      'Vehicle Rear — Exterior',
+      'Vehicle Right — Exterior',
+      'Vehicle Left — Exterior',
+      'Vehicle Front — Interior',
+      'Vehicle Rear — Interior',
+    ]) {
+      await upload(label);
+    }
+    await tap(find.text('Next'), network: true, settle: false);
+    await waitFor(find.text('Review & Submit'));
+    await tap(find.text('Save & exit'), network: true, settle: false);
+    await waitFor(find.byType(RiderShell));
+
+    // Reopening reloads the saved application, including the selfie preview.
+    await openDriverApplication();
+    await waitFor(find.text('Review & Submit'));
+    expect(find.text('•••••-••••567-1'), findsOneWidget);
+    final confirmation = find.text(
+      'I confirm the details and documents are accurate.',
     );
-    await tester.scrollUntilVisible(continueButton, 120);
-    for (var attempt = 0; attempt < 100; attempt++) {
-      if (tester.widget<FilledButton>(continueButton).onPressed != null) break;
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)),
-      );
-      await tester.pump();
-    }
-    expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
-    await tap(continueButton, network: true, settle: false);
-    await waitFor(find.text('Review & Submit'));
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    // Reopening reloads the same saved application draft through the Go API.
-    await openDriverApplication();
-    await waitFor(find.text('Review & Submit'));
-    expect(find.text('Registration: ABC-123'), findsOneWidget);
+    await reveal(confirmation);
+    await tap(confirmation);
     await tap(find.text('Submit for Review'), network: true, settle: false);
     await waitFor(find.text('Application Pending Review'));
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await tap(find.text('Done'));
 
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {
@@ -226,8 +282,8 @@ void main() {
       expect(application['status'], 'pending_review');
       final draft = application['draft'] as Map<String, dynamic>;
       expect(draft['registration_number'], 'ABC-123');
-      expect(draft['identity_saved'], 'true');
-      expect(draft['vehicle_saved'], 'true');
+      expect(draft['license_expiry'], '2050-01-01');
+      expect(application['documents'], hasLength(12));
       await restored.logout();
       await authSession.restore();
     });

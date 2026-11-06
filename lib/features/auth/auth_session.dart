@@ -40,7 +40,7 @@ class AuthSession extends ChangeNotifier {
 
   Future<Map<String, dynamic>> request(
     String path, {
-    Map<String, String>? body,
+    Map<String, Object>? body,
     String? bearer,
     String method = 'POST',
   }) async {
@@ -68,9 +68,7 @@ class AuthSession extends ChangeNotifier {
           .then(http.Response.fromStream)
           .timeout(
             Duration(
-              seconds: path.endsWith('/vehicle-documents') && method == 'POST'
-                  ? 30
-                  : 15,
+              seconds: path.endsWith('/document') && method == 'POST' ? 30 : 15,
             ),
           );
     } on Exception {
@@ -92,9 +90,7 @@ class AuthSession extends ChangeNotifier {
         'The reset expired. Request a new code.',
       'rate_limited' => 'Too many attempts. Please wait and try again.',
       'document_too_large' =>
-        path.endsWith('/vehicle-documents')
-            ? 'Choose smaller images. Each vehicle document must fit within 2 MB.'
-            : 'Choose smaller images. Each CNIC side must fit within 1 MB.',
+        'Choose a smaller image within the limit shown for this document.',
       'upload_timeout' =>
         'The upload took too long. Try a stronger connection or smaller images.',
       'invalid_document' =>
@@ -171,7 +167,7 @@ class AuthSession extends ChangeNotifier {
   Future<Map<String, dynamic>> currentUser() => _requestCurrentUser();
 
   Future<Map<String, dynamic>> _requestCurrentUser({
-    Map<String, String>? update,
+    Map<String, Object>? update,
     String path = 'me',
     String? method,
   }) async {
@@ -239,15 +235,32 @@ class AuthSession extends ChangeNotifier {
     method: 'PATCH',
   );
 
-  Future<Map<String, dynamic>> saveDriverApplicationDocuments(
+  Future<Map<String, dynamic>> saveDriverApplicationDocument(
     Map<String, String> fields, {
     required Object? accountId,
-    required bool identity,
   }) => _driverApplicationRequest(
     accountId: accountId,
-    suffix: identity ? '/identity-documents' : '/vehicle-documents',
+    suffix: '/document',
     fields: fields,
     method: 'POST',
+  );
+
+  Future<Map<String, dynamic>> removeAdditionalDriverDocument({
+    required Object? accountId,
+    required String draftRevision,
+  }) => _driverApplicationRequest(
+    accountId: accountId,
+    suffix:
+        '/document?kind=additional&draft_revision=${Uri.encodeQueryComponent(draftRevision)}',
+    method: 'DELETE',
+  );
+
+  Future<Map<String, dynamic>> driverApplicationPreview({
+    required Object? accountId,
+    required String kind,
+  }) => _driverApplicationRequest(
+    accountId: accountId,
+    suffix: '/preview?kind=${Uri.encodeQueryComponent(kind)}',
   );
 
   Future<Map<String, dynamic>> submitDriverApplication({
@@ -255,7 +268,7 @@ class AuthSession extends ChangeNotifier {
     required String draftRevision,
   }) => _driverApplicationRequest(
     accountId: accountId,
-    fields: {'draft_revision': draftRevision},
+    fields: {'draft_revision': draftRevision, 'confirmed': true},
     method: 'POST',
   );
 
@@ -263,7 +276,7 @@ class AuthSession extends ChangeNotifier {
     required Object? accountId,
     String suffix = '',
     String method = 'GET',
-    Map<String, String>? fields,
+    Map<String, Object>? fields,
   }) async {
     late Map<String, dynamic> result;
     await _changeSession(() async {
