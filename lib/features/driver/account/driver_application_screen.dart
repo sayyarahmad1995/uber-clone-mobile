@@ -14,9 +14,11 @@ class DriverApplicationScreen extends StatefulWidget {
     this.session,
     this.pickDocument,
     this.captureSelfie,
+    this.onBackToAccount,
   });
 
   final AuthSession? session;
+  final VoidCallback? onBackToAccount;
   final Future<Uint8List?> Function(int maxBytes)? pickDocument;
   final Future<Uint8List?> Function(int maxBytes)? captureSelfie;
 
@@ -167,6 +169,8 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
       ..addAll(
         (application['documents'] as List? ?? const []).whereType<String>(),
       );
+    if (!_saved.contains('selfie') && _pendingKind != 'selfie')
+      _setSelfie(null);
     _underReview = application['status'] == 'pending_review';
     _loaded = true;
   }
@@ -203,12 +207,14 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
     }
   });
 
-  Future<void> _persist(int step) async {
+  Future<int> _persist(int step) async {
     final updated = await _session.saveDriverApplicationDraft({
       ..._draft,
       'step': '$step',
     }, accountId: _owner);
     if (mounted && _sameAccount) _adopt(updated);
+    final saved = updated['draft'] as Map;
+    return (int.tryParse(saved['step'] as String? ?? '') ?? step).clamp(0, 3);
   }
 
   Future<void> _send(String kind, Uint8List bytes) async {
@@ -243,18 +249,22 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
           : 'Save all required images before continuing.';
       return;
     }
-    await _persist(_step + 1);
+    final requested = _step + 1;
+    final savedStep = await _persist(requested);
     if (!mounted || !_sameAccount) return;
-    _step++;
+    _step = savedStep;
+    if (savedStep == 0 && !_saved.contains('selfie')) {
+      _error = 'Your identity details changed. Retake your selfie to continue.';
+    }
     _form = GlobalKey<FormState>();
     _confirmed = false;
   });
 
   Future<void> _goTo(int step) => _run(() async {
     if (_step == 2) _form.currentState?.save();
-    await _persist(step);
+    final savedStep = await _persist(step);
     if (!mounted || !_sameAccount) return;
-    _step = step;
+    _step = savedStep;
     _pendingImage = null;
     _pendingKind = null;
     _form = GlobalKey<FormState>();
@@ -264,6 +274,10 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
   Future<void> _saveAndExit() => _run(() async {
     _form.currentState?.save();
     if (_step < 3) await _persist(_step);
+    if (!mounted || !_sameAccount) return;
+    if (_pendingKind case final kind?) {
+      await _send(kind, _pendingImage!);
+    }
     if (mounted && _sameAccount) Navigator.of(context).pop();
   });
 
@@ -915,23 +929,26 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
               children: [
                 if (wizard) _Progress(step: _step),
                 if (_busy) const LinearProgressIndicator(),
+                if (_error case final error?)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Text(
+                      error,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                if (_conflict)
+                  TextButton(
+                    onPressed: _load,
+                    child: const Text('Refresh application'),
+                  ),
                 Expanded(
                   child: ListView(
                     key: ValueKey(_underReview ? 'submitted' : _step),
                     padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                     children: [
-                      if (_error case final error?)
-                        Text(
-                          error,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      if (_conflict)
-                        TextButton(
-                          onPressed: _load,
-                          child: const Text('Refresh application'),
-                        ),
                       if (!_sameAccount)
                         const Text('Sign in to view your driver application.')
                       else if (_underReview) ...[
@@ -1012,13 +1029,14 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
                                     (!_confirmed || !_reviewReady))
                             ? null
                             : _underReview
-                            ? () => Navigator.pop(context)
+                            ? widget.onBackToAccount ??
+                                  () => Navigator.pop(context)
                             : _step == 3
                             ? _submit
                             : _next,
                         child: Text(
                           _underReview
-                              ? 'Done'
+                              ? 'Back to Account'
                               : _step == 3
                               ? 'Submit for Review'
                               : 'Next',

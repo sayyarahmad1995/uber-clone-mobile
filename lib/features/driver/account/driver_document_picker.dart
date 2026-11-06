@@ -97,6 +97,15 @@ Future<Uint8List?> captureDriverSelfie(int maxBytes) async {
       'Use HiGO on an Android or iOS device to take a selfie.',
     );
   }
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      return await const MethodChannel(
+        'higo/driver_documents',
+      ).invokeMethod<Uint8List>('captureSelfie', {'maxBytes': maxBytes});
+    } on PlatformException catch (error) {
+      throw AuthError(error.message ?? 'Unable to open the camera.');
+    }
+  }
   try {
     final photo = await ImagePicker().pickImage(
       source: ImageSource.camera,

@@ -263,7 +263,7 @@ void main() {
     await tap(confirmation);
     await tap(find.text('Submit for Review'), network: true, settle: false);
     await waitFor(find.text('Application Pending Review'));
-    await tap(find.text('Done'));
+    await tap(find.text('Back to Account'));
 
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {

@@ -35,6 +35,7 @@ class _Api {
   String status = 'draft';
   int submitted = 0;
   int previews = 0;
+  bool invalidateEditedSelfie = false;
 
   void change() => draft['revision'] = '${int.parse(draft['revision']!) + 1}';
   http.Response response(Object value, [int code = 200]) =>
@@ -67,7 +68,15 @@ class _Api {
           if (data['revision'] != draft['revision']) {
             return response({'error': 'onboarding_conflict'}, 409);
           }
+          final resetSelfie =
+              invalidateEditedSelfie &&
+              documents.contains('selfie') &&
+              data['legal_name'] != draft['legal_name'];
           draft.addAll(data.cast<String, String>());
+          if (resetSelfie) {
+            draft['step'] = '0';
+            documents.remove('selfie');
+          }
           change();
         case 'POST $_path/document':
           if (data['draft_revision'] != draft['revision']) {
@@ -236,7 +245,9 @@ void main() {
       expect(find.text('Driver Details'), findsOneWidget);
       await pick(tester, 'Take selfie');
       await pick(tester, 'Retake selfie');
-      expect(captures, 2);
+      expect(find.text('Selected'), findsOneWidget);
+      await pick(tester, 'Retake selfie');
+      expect(captures, 3);
       await date(tester, 'date-date_of_birth', '01/01/1990');
       await tester.enterText(
         find.widgetWithText(TextFormField, 'CNIC Number'),
@@ -303,13 +314,6 @@ void main() {
     await click(tester, confirmation);
     await click(tester, 'Submit for Review');
     expect(api.submitted, 0);
-    // The conflict notice is at the top of the review.
-    final scroll = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(
-      find.text('Refresh application'),
-      -240,
-      scrollable: scroll,
-    );
     await click(tester, 'Refresh application');
     expect(find.text('Corrected Applicant'), findsOneWidget);
     await click(tester, confirmation);
@@ -329,5 +333,48 @@ void main() {
     await click(tester, 'Remove additional document');
     expect(api.documents, unorderedEquals(_mandatory));
     expect(find.text('Additional Document Validity'), findsNothing);
+  });
+  testWidgets('identity edits require a replacement selfie before advancing', (
+    tester,
+  ) async {
+    viewport(tester);
+    final api = _Api()..invalidateEditedSelfie = true;
+    api.draft.addAll(completeDraft('0'));
+    api.documents.add('selfie');
+    await open(tester, await login(api));
+    expect(find.text('Retake selfie'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Legal Name'),
+      'Corrected Applicant',
+    );
+    await click(tester, 'Next');
+    expect(find.text('Driver Details'), findsOneWidget);
+    expect(find.text('Take selfie'), findsOneWidget);
+    expect(find.textContaining('identity details changed'), findsOneWidget);
+    await pick(tester, 'Take selfie');
+    await click(tester, 'Next');
+    expect(find.text('Vehicle Details'), findsOneWidget);
+    expect(api.uploads, ['selfie']);
+  });
+
+  testWidgets('pending action uses the configured account destination', (
+    tester,
+  ) async {
+    viewport(tester);
+    final api = _Api()..status = 'pending_review';
+    final session = await login(api);
+    var returned = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DriverApplicationScreen(
+          session: session,
+          onBackToAccount: () => returned = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Application Pending Review'), findsOneWidget);
+    await click(tester, 'Back to Account');
+    expect(returned, isTrue);
   });
 }

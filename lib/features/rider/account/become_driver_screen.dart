@@ -120,11 +120,19 @@ class BecomeDriverScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const DriverApplicationScreen(),
-                    ),
-                  ),
+                  onPressed: () {
+                    final navigator = Navigator.of(context);
+                    navigator.push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => DriverApplicationScreen(
+                          onBackToAccount: () {
+                            navigator.pop();
+                            if (navigator.canPop()) navigator.pop();
+                          },
+                        ),
+                      ),
+                    );
+                  },
                   child: const Text('Open driver application'),
                 ),
               ),
