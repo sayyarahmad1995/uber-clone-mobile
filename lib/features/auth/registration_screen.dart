@@ -107,6 +107,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 hintText: 'Enter your email',
+                helperText:
+                    'Add your email for future account recovery, ride receipts, and important updates. You can verify it later.',
+                helperMaxLines: 4,
                 prefixIcon: Icon(Icons.mail_outline),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../app/higo_theme.dart';
 import '../../auth/auth_session.dart';
 import 'rider_profile_store.dart';
+import 'email_verification_dialog.dart';
 
 const _profileBackground = BoxDecoration(
   gradient: LinearGradient(
@@ -71,6 +72,20 @@ class PersonalInformationScreen extends StatelessWidget {
                     value: profile.email.isEmpty
                         ? 'Not provided'
                         : profile.email,
+                  ),
+
+                  if (profile.email.isNotEmpty)
+                    Text(profile.emailVerified ? 'Verified' : 'Unverified'),
+                  if (profile.pendingEmail.isNotEmpty)
+                    Text('Awaiting verification for ${profile.pendingEmail}'),
+                  TextButton(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => EmailVerificationDialog(profile: profile),
+                    ),
+                    child: Text(
+                      profile.emailVerified ? 'Change email' : 'Verify email',
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -427,7 +442,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                 TextFormField(
                   controller: _emailController,
-                  enabled: !_saving,
+                  enabled: !_saving && !_initialProfile.emailVerified,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email Address',

@@ -8,11 +8,15 @@ class RiderProfile {
     required this.fullName,
     required this.phoneNumber,
     required this.email,
+    this.emailVerified = false,
+    this.pendingEmail = '',
   });
 
   final String fullName;
   final String phoneNumber;
   final String email;
+  final bool emailVerified;
+  final String pendingEmail;
 
   String get firstName {
     final name = fullName.trim();
@@ -35,6 +39,8 @@ class RiderProfileStore implements Listenable {
       fullName: user?['name'] as String? ?? '',
       phoneNumber: user?['phone'] as String? ?? '',
       email: user?['email'] as String? ?? '',
+      emailVerified: user?['email_verified'] == true,
+      pendingEmail: user?['pending_email'] as String? ?? '',
     );
   }
 
