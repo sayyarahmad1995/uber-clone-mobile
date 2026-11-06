@@ -31,6 +31,9 @@ class AuthSession extends ChangeNotifier {
   String? _access;
   String? _refresh;
   Future<void>? _refreshing;
+  Future<void>? _loggingOut;
+  Future<void> _sessionChanges = Future.value();
+  int _signInAttempt = 0;
   Map<String, dynamic>? user;
   bool get authenticated => user != null;
 
@@ -89,9 +92,24 @@ class AuthSession extends ChangeNotifier {
   }
 
   Future<void> signIn(Map<String, dynamic> tokens) async {
-    await _save(tokens);
-    user = await currentUser();
-    notifyListeners();
+    final attempt = ++_signInAttempt;
+    final profile = await request(
+      'me',
+      bearer: tokens['access_token'] as String,
+      get: true,
+    );
+    await _changeSession(() async {
+      if (attempt != _signInAttempt) return;
+      await _save(tokens);
+      user = profile;
+      notifyListeners();
+    });
+  }
+
+  Future<void> _changeSession(Future<void> Function() change) {
+    final pending = _sessionChanges.then((_) => change());
+    _sessionChanges = pending.then<void>((_) {}, onError: (Object _) {});
+    return pending;
   }
 
   Future<void> _save(Map<String, dynamic> tokens) async {
@@ -140,7 +158,11 @@ class AuthSession extends ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout() => _loggingOut ??= _changeSession(
+    _logout,
+  ).whenComplete(() => _loggingOut = null);
+
+  Future<void> _logout() async {
     try {
       await request('auth/logout', bearer: _access);
     } on AuthError catch (error) {
