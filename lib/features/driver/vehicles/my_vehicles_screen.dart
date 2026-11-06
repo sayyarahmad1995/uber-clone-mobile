@@ -49,12 +49,6 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     if (mounted && saved == true) setState(() => _vehicles = _load());
   }
 
-  String _status(Object? status) => switch (status) {
-    'approved' => 'Approved',
-    'rejected' => 'Rejected',
-    _ => 'Submitted',
-  };
-
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -87,7 +81,9 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
               final vehicles = (snapshot.data?['vehicles'] as List)
                   .cast<Map<String, dynamic>>();
               if (vehicles.isEmpty) {
-                return const Center(child: Text('No vehicle submissions yet.'));
+                return const Center(
+                  child: Text('No vehicle details saved yet.'),
+                );
               }
               return ListView(
                 padding: const EdgeInsets.all(16),
@@ -98,8 +94,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                         leading: const Icon(Icons.directions_car_outlined),
                         title: Text('${vehicle['make']} ${vehicle['model']}'),
                         subtitle: Text(
-                          '${vehicle['registration_number']} · ${_status(vehicle['status'])} · Version ${vehicle['version']}'
-                          '${vehicle['rejection_reason'] is String && (vehicle['rejection_reason'] as String).isNotEmpty ? '\nReason: ${vehicle['rejection_reason']}' : ''}',
+                          '${vehicle['registration_number']} · Version ${vehicle['version']}',
                         ),
                         trailing: const Icon(Icons.edit_outlined),
                         onTap: () => _open(vehicle),

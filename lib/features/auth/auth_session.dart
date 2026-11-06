@@ -39,7 +39,7 @@ class AuthSession extends ChangeNotifier {
 
   Future<Map<String, dynamic>> request(
     String path, {
-    Map<String, String>? body,
+    Map<String, Object>? body,
     String? bearer,
     String method = 'POST',
   }) async {
@@ -164,7 +164,7 @@ class AuthSession extends ChangeNotifier {
   Future<Map<String, dynamic>> currentUser() => _requestCurrentUser();
 
   Future<Map<String, dynamic>> _requestCurrentUser({
-    Map<String, String>? update,
+    Map<String, Object>? update,
     String path = 'me',
     String? method,
   }) async {
@@ -240,10 +240,43 @@ class AuthSession extends ChangeNotifier {
     fields: fields,
   );
 
+  Future<Map<String, dynamic>> driverApplication({
+    required Object? accountId,
+  }) => _driverIdentityRequest(
+    accountId: accountId,
+    path: 'me/driver-application',
+  );
+
+  Future<Map<String, dynamic>> saveDriverApplicationDraft(
+    Map<String, String> draft, {
+    required Object? accountId,
+  }) => _driverIdentityRequest(
+    accountId: accountId,
+    path: 'me/driver-application',
+    fields: draft,
+    method: 'PATCH',
+  );
+
+  Future<Map<String, dynamic>> submitDriverApplication({
+    required Object? accountId,
+    required int identityVersion,
+    required String vehicleId,
+    required int vehicleVersion,
+  }) => _driverIdentityRequest(
+    accountId: accountId,
+    path: 'me/driver-application',
+    fields: {
+      'identity_version': identityVersion,
+      'vehicle_id': vehicleId,
+      'vehicle_version': vehicleVersion,
+    },
+  );
+
   Future<Map<String, dynamic>> _driverIdentityRequest({
     required Object? accountId,
     String path = 'me/driver-submission',
-    Map<String, String>? fields,
+    Map<String, Object>? fields,
+    String? method,
   }) async {
     late Map<String, dynamic> result;
     await _changeSession(() async {
@@ -253,7 +286,7 @@ class AuthSession extends ChangeNotifier {
       result = await _requestCurrentUser(
         path: path,
         update: fields,
-        method: fields == null ? 'GET' : 'POST',
+        method: method ?? (fields == null ? 'GET' : 'POST'),
       );
     });
     return result;

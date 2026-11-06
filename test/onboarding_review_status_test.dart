@@ -58,18 +58,19 @@ void main() {
     expect(find.text('Identity approved · Version 2'), findsOneWidget);
   });
 
-  testWidgets('vehicle shows rejection and the reviewer reason', (
-    tester,
-  ) async {
-    final session = await signedIn();
-    await tester.pumpWidget(
-      MaterialApp(home: MyVehiclesScreen(session: session)),
-    );
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Rejected · Version 3'), findsOneWidget);
-    expect(
-      find.textContaining('Registration image is unclear.'),
-      findsOneWidget,
-    );
-  });
+  testWidgets(
+    'vehicle management shows metadata without a separate application outcome',
+    (tester) async {
+      final session = await signedIn();
+      await tester.pumpWidget(
+        MaterialApp(home: MyVehiclesScreen(session: session)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ABC-123 · Version 3'), findsOneWidget);
+      expect(
+        find.textContaining('Registration image is unclear.'),
+        findsNothing,
+      );
+    },
+  );
 }

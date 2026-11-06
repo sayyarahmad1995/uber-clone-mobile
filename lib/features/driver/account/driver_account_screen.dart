@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/higo_theme.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import '../models/mock_ride_request.dart';
-import 'driver_identity_screen.dart';
+import 'driver_application_screen.dart';
 import '../vehicles/my_vehicles_screen.dart';
 import '../../../app/app_mode_controller.dart';
 import '../../account/help_support_screen.dart';
@@ -12,9 +12,9 @@ import '../../account/about_higo_screen.dart';
 class DriverAccountScreen extends StatelessWidget {
   const DriverAccountScreen({super.key});
 
-  void _openIdentity(BuildContext context) {
+  void _openApplication(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const DriverIdentityScreen()),
+      MaterialPageRoute<void>(builder: (_) => const DriverApplicationScreen()),
     );
   }
 
@@ -64,7 +64,7 @@ class DriverAccountScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () => _openIdentity(context),
+                    onTap: () => _openApplication(context),
                     child: Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -209,15 +209,16 @@ class DriverAccountScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 HiGoAccountTile(
                   icon: Icons.person_outline,
-                  title: 'Personal Information',
-                  subtitle: 'Name and contact details',
-                  onTap: () => _openIdentity(context),
+                  title: 'Driver Application',
+                  subtitle:
+                      'Continue onboarding or view your application status',
+                  onTap: () => _openApplication(context),
                 ),
                 const SizedBox(height: 10),
                 HiGoAccountTile(
                   icon: Icons.directions_car_outlined,
                   title: 'My Vehicles',
-                  subtitle: 'Manage vehicles and approval status',
+                  subtitle: 'Manage saved vehicle details',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -230,8 +231,8 @@ class DriverAccountScreen extends StatelessWidget {
                 HiGoAccountTile(
                   icon: Icons.description_outlined,
                   title: 'Documents',
-                  subtitle: 'Driver identity documents',
-                  onTap: () => _openIdentity(context),
+                  subtitle: 'Documents in your driver application',
+                  onTap: () => _openApplication(context),
                 ),
                 const SizedBox(height: 20),
                 HiGoAccountTile(
