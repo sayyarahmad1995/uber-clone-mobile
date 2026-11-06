@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uberclone/app/app.dart';
+import 'package:uberclone/features/driver/account/driver_identity_screen.dart';
 import 'package:uberclone/features/auth/auth_session.dart';
 import 'package:uberclone/features/rider/home/rider_shell.dart';
 
@@ -119,6 +121,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(updatedName), findsOneWidget);
 
+    final identityImage = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC',
+    );
+    final shellContext = tester.element(find.byType(RiderShell));
+    await tester.runAsync(() async {
+      Navigator.of(shellContext).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              DriverIdentityScreen(pickImage: () async => identityImage),
+        ),
+      );
+    });
+    await waitFor(find.text('Choose CNIC front'));
+    await tap(find.text('Choose CNIC front'));
+    await tap(find.text('Choose CNIC back'));
+    await tap(find.text('Submit identity'), network: true);
+    await waitFor(find.text('Identity submitted · Version 1'));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {
       final restored = HttpOverrides.runZoned(
@@ -130,6 +152,11 @@ void main() {
       expect(restored.user?['name'], updatedName);
       expect(restored.user?['email'], updatedEmail);
       expect(restored.user?['email_verified'], isTrue);
+      final identity = await restored.driverIdentitySubmission(
+        accountId: restored.user?['id'],
+      );
+      expect(identity['version'], 1);
+      expect(identity['status'], 'submitted');
       await restored.logout();
       await authSession.restore();
     });

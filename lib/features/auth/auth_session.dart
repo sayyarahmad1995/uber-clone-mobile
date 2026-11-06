@@ -202,6 +202,33 @@ class AuthSession extends ChangeNotifier {
     });
   }
 
+  Future<Map<String, dynamic>> driverIdentitySubmission({
+    required Object? accountId,
+  }) => _driverIdentityRequest(accountId: accountId);
+
+  Future<Map<String, dynamic>> submitDriverIdentity(
+    Map<String, String> fields, {
+    required Object? accountId,
+  }) => _driverIdentityRequest(accountId: accountId, fields: fields);
+
+  Future<Map<String, dynamic>> _driverIdentityRequest({
+    required Object? accountId,
+    Map<String, String>? fields,
+  }) async {
+    late Map<String, dynamic> result;
+    await _changeSession(() async {
+      if (accountId == null || user?['id'] != accountId) {
+        throw const AuthError('Please log in again.', 401);
+      }
+      result = await _requestCurrentUser(
+        path: 'me/driver-submission',
+        update: fields,
+        method: fields == null ? 'GET' : 'POST',
+      );
+    });
+    return result;
+  }
+
   Future<void> logout() => _loggingOut ??= _changeSession(
     _logout,
   ).whenComplete(() => _loggingOut = null);

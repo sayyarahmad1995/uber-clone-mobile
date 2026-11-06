@@ -75,4 +75,23 @@ void main() {
       'new-refresh',
     ]);
   });
+  test('an old identity draft cannot upload under a new account', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    final session = AuthSession(
+      base: Uri.parse('https://example.test'),
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/me');
+        final id = request.headers['Authorization'] == 'Bearer first' ? 1 : 2;
+        return http.Response(jsonEncode({'id': id}), 200);
+      }),
+    );
+    await session.signIn({'access_token': 'first', 'refresh_token': 'one'});
+    final owner = session.user?['id'];
+    await session.signIn({'access_token': 'second', 'refresh_token': 'two'});
+    await expectLater(
+      session.submitDriverIdentity({'cnic_front': 'test'}, accountId: owner),
+      throwsA(isA<AuthError>()),
+    );
+    expect(session.user?['id'], 2);
+  });
 }

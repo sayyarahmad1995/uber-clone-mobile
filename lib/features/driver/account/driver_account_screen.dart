@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/higo_theme.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import '../models/mock_ride_request.dart';
+import 'driver_identity_screen.dart';
 import '../vehicles/my_vehicles_screen.dart';
 import '../../../app/app_mode_controller.dart';
 import '../../account/help_support_screen.dart';
@@ -10,6 +11,12 @@ import '../../account/about_higo_screen.dart';
 
 class DriverAccountScreen extends StatelessWidget {
   const DriverAccountScreen({super.key});
+
+  void _openIdentity(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DriverIdentityScreen()),
+    );
+  }
 
   void _comingLater(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -57,7 +64,7 @@ class DriverAccountScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () => _comingLater(context, 'Driver profile'),
+                    onTap: () => _openIdentity(context),
                     child: Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -200,7 +207,7 @@ class DriverAccountScreen extends StatelessWidget {
                   icon: Icons.person_outline,
                   title: 'Personal Information',
                   subtitle: 'Name and contact details',
-                  onTap: () => _comingLater(context, 'Personal information'),
+                  onTap: () => _openIdentity(context),
                 ),
                 const SizedBox(height: 10),
                 HiGoAccountTile(
@@ -219,8 +226,8 @@ class DriverAccountScreen extends StatelessWidget {
                 HiGoAccountTile(
                   icon: Icons.description_outlined,
                   title: 'Documents',
-                  subtitle: 'Driver and vehicle documents',
-                  onTap: () => _comingLater(context, 'Documents'),
+                  subtitle: 'Driver identity documents',
+                  onTap: () => _openIdentity(context),
                 ),
                 const SizedBox(height: 20),
                 HiGoAccountTile(

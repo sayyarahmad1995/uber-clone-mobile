@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../driver/account/driver_identity_screen.dart';
+
 import '../../../app/higo_theme.dart';
 
 class BecomeDriverScreen extends StatelessWidget {
@@ -95,17 +97,13 @@ class BecomeDriverScreen extends StatelessWidget {
                       const _InfoRow(
                         icon: Icons.description_outlined,
                         title: 'Documents',
-                        subtitle:
-                            'Required documents will be shown '
-                            'in the application flow',
+                        subtitle: 'CNIC front and back for identity submission',
                       ),
 
                       const SizedBox(height: 16),
 
                       const Text(
-                        'Application requirements, review stages, '
-                        'and eligibility will follow the existing '
-                        'HiGO backend rules.',
+                        'Vehicle details and review follow the identity step.',
                         style: TextStyle(
                           fontSize: 11,
                           height: 1.4,
@@ -122,24 +120,19 @@ class BecomeDriverScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Driver applications will be '
-                          'implemented in a later milestone.',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Application Coming Soon'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DriverIdentityScreen(),
+                    ),
+                  ),
+                  child: const Text('Start identity submission'),
                 ),
               ),
 
               const SizedBox(height: 6),
 
               const Text(
-                'No application will be submitted in this demo.',
+                'Identity submission is the first step.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 11, color: HiGoTheme.secondaryText),
               ),
