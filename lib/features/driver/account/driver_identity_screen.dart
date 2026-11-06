@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
@@ -36,6 +37,53 @@ Future<Uint8List?> _pickImage() async {
     return await file.readAsBytes();
   } finally {
     await removeImportedDriverImage(file.path);
+  }
+}
+
+Future<Uint8List> _prepareImage(Uint8List bytes) async {
+  if (bytes.isEmpty || bytes.length > _maxImageBytes) {
+    throw const AuthError('Choose a JPEG or PNG of up to 1 MB.');
+  }
+  final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+  try {
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    try {
+      final width = descriptor.width;
+      final height = descriptor.height;
+      if (width > 4096 || height > 4096 || width * height > 8000000) {
+        throw const AuthError(
+          'Choose an image no larger than 4096 pixels per side and 8 megapixels.',
+        );
+      }
+      if (width <= 2048 && height <= 2048) return bytes;
+      final codec = await descriptor.instantiateCodec(
+        targetWidth: width >= height ? 2048 : null,
+        targetHeight: height > width ? 2048 : null,
+      );
+      try {
+        final image = (await codec.getNextFrame()).image;
+        try {
+          final resized = (await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          ))?.buffer.asUint8List();
+          return resized != null && resized.length < bytes.length
+              ? resized
+              : bytes;
+        } finally {
+          image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+    } finally {
+      descriptor.dispose();
+    }
+  } on AuthError {
+    rethrow;
+  } catch (_) {
+    throw const AuthError('Choose a readable JPEG or PNG.');
+  } finally {
+    buffer.dispose();
   }
 }
 
@@ -110,10 +158,12 @@ class _DriverIdentityScreenState extends State<DriverIdentityScreen> {
       if (!mounted || image == null || _session.user?['id'] != _accountId) {
         return;
       }
+      final prepared = await _prepareImage(image);
+      if (!mounted || _session.user?['id'] != _accountId) return;
       if (front) {
-        _front = image;
+        _front = prepared;
       } else {
-        _back = image;
+        _back = prepared;
       }
       _error = null;
     } catch (error) {

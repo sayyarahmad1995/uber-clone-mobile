@@ -138,8 +138,10 @@ void main() {
       );
     });
     await waitFor(find.text('Choose CNIC front'));
-    await tap(find.text('Choose CNIC front'));
-    await tap(find.text('Choose CNIC back'));
+    await tap(find.text('Choose CNIC front'), network: true, settle: false);
+    await waitFor(find.text('Replace CNIC front'));
+    await tap(find.text('Choose CNIC back'), network: true, settle: false);
+    await waitFor(find.text('Replace CNIC back'));
     await tap(find.text('Submit identity'), network: true, settle: false);
     await waitFor(find.text('Identity submitted · Version 1'));
     await tester.pageBack();

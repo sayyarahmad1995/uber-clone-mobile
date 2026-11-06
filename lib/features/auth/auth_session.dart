@@ -83,6 +83,12 @@ class AuthSession extends ChangeNotifier {
       'invalid_or_expired_recovery_token' =>
         'The reset expired. Request a new code.',
       'rate_limited' => 'Too many attempts. Please wait and try again.',
+      'document_too_large' =>
+        'Choose smaller images. Each CNIC side must fit within 1 MB.',
+      'invalid_document' =>
+        'Choose a readable JPEG or PNG within 4096 pixels per side and 8 megapixels.',
+      'document_quota_exceeded' =>
+        'Too many document versions are retained. Try again after older copies expire.',
       'invalid_request' => 'Check the details and try again.',
       _ => 'HiGO could not complete the request. Try again.',
     };
