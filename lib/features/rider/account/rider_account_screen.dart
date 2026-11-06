@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/higo_theme.dart';
+import '../../../app/app_mode_controller.dart';
 import '../../account/widgets/higo_account_tile.dart';
 import 'become_driver_screen.dart';
 import 'personal_information_screen.dart';
@@ -145,6 +146,13 @@ class RiderAccountScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 20),
+            if (appMode.canUseDriverMode)
+              HiGoAccountTile(
+                icon: Icons.swap_horiz,
+                title: 'Switch to Driver',
+                subtitle: 'Use the driver interface',
+                onTap: appMode.switchToDriver,
+              ),
             HiGoAccountTile(
               icon: Icons.logout,
               title: 'Log Out',
