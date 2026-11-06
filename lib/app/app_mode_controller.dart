@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../features/auth/auth_session.dart';
+import '../features/driver/models/mock_ride_request.dart';
 
 enum HiGoAppMode { rider, driver }
 
@@ -20,7 +21,9 @@ class AppModeController extends ValueNotifier<HiGoAppMode> {
 
   void _updateAccount() {
     final account = session.user?['id'];
-    if (account != _account || !canUseDriverMode) {
+    final accountChanged = account != _account;
+    if (accountChanged) DriverDemoStore.instance.resetDemo();
+    if (accountChanged || !canUseDriverMode) {
       value = HiGoAppMode.rider;
     }
     _account = account;

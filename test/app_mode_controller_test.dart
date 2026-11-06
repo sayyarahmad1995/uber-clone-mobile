@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:uberclone/app/app_mode_controller.dart';
 import 'package:uberclone/features/auth/auth_session.dart';
+import 'package:uberclone/features/driver/models/mock_ride_request.dart';
 
 void main() {
   test(
@@ -69,6 +70,9 @@ void main() {
       final restoredMode = AppModeController(restored);
       await restored.restore();
       final beforeSwitch = calls;
+      final demo = DriverDemoStore.instance;
+      final vehicle = demo.approvedVehicles.first.id;
+      expect(demo.selectVehicle(vehicle), isTrue);
       restoredMode.switchToDriver();
       expect(restoredMode.value, HiGoAppMode.driver);
       restoredMode.switchToRider();
@@ -76,7 +80,9 @@ void main() {
       expect(restored.authenticated, isTrue);
       expect(calls, beforeSwitch);
       restoredMode.switchToDriver();
+      expect(demo.selectedVehicleId, vehicle);
       await restored.logout();
+      expect(demo.selectedVehicleId, isNull);
       expect(restoredMode.value, HiGoAppMode.rider);
       mode.dispose();
       restoredMode.dispose();
