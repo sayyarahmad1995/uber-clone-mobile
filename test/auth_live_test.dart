@@ -6,6 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uberclone/app/app.dart';
 import 'package:uberclone/features/driver/account/driver_identity_screen.dart';
+import 'package:uberclone/features/driver/vehicles/add_vehicle_screen.dart';
+import 'package:uberclone/features/driver/vehicles/my_vehicles_screen.dart';
 import 'package:uberclone/features/auth/auth_session.dart';
 import 'package:uberclone/features/rider/home/rider_shell.dart';
 
@@ -147,6 +149,49 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
+    await tester.runAsync(() async {
+      Navigator.of(shellContext).push<bool>(
+        MaterialPageRoute(
+          builder: (_) =>
+              AddVehicleScreen(pickDocument: () async => identityImage),
+        ),
+      );
+    });
+    await waitFor(find.text('Add Vehicle'));
+    final vehicleFields = find.byType(EditableText);
+    for (final (index, value) in [
+      'Toyota',
+      'Corolla',
+      '2022',
+      'Blue',
+      'ABC-123',
+    ].indexed) {
+      await tester.enterText(vehicleFields.at(index), value);
+    }
+    await tap(
+      find.text('Choose registration document'),
+      network: true,
+      settle: false,
+    );
+    await waitFor(find.text('Replace registration document'));
+    await tap(
+      find.text('Choose insurance document'),
+      network: true,
+      settle: false,
+    );
+    await waitFor(find.text('Replace insurance document'));
+    await tap(find.text('Submit vehicle'), network: true, settle: false);
+    await waitFor(find.byType(RiderShell));
+    await tester.runAsync(() async {
+      Navigator.of(
+        shellContext,
+      ).push<void>(MaterialPageRoute(builder: (_) => const MyVehiclesScreen()));
+    });
+    await waitFor(find.text('Toyota Corolla'));
+    expect(find.text('ABC-123 · Submitted · Version 1'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {
       final restored = HttpOverrides.runZoned(
@@ -163,6 +208,11 @@ void main() {
       );
       expect(identity['version'], 1);
       expect(identity['status'], 'submitted');
+      final vehicles = await restored.vehicles(accountId: restored.user?['id']);
+      expect(
+        (vehicles['vehicles'] as List).single['registration_number'],
+        'ABC-123',
+      );
       await restored.logout();
       await authSession.restore();
     });

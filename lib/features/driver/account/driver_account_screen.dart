@@ -148,7 +148,11 @@ class DriverAccountScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () => _comingLater(context, 'Vehicle details'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MyVehiclesScreen(),
+                      ),
+                    ),
                     child: Container(
                       padding: const EdgeInsets.all(17),
                       decoration: BoxDecoration(

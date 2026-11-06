@@ -65,7 +65,11 @@ class AuthSession extends ChangeNotifier {
       response = await _client
           .send(request)
           .then(http.Response.fromStream)
-          .timeout(const Duration(seconds: 15));
+          .timeout(
+            Duration(
+              seconds: path == 'me/vehicles' && method == 'POST' ? 30 : 15,
+            ),
+          );
     } on Exception {
       throw const AuthError('Could not connect to HiGO. Try again.');
     }
@@ -84,7 +88,14 @@ class AuthSession extends ChangeNotifier {
         'The reset expired. Request a new code.',
       'rate_limited' => 'Too many attempts. Please wait and try again.',
       'document_too_large' =>
-        'Choose smaller images. Each CNIC side must fit within 1 MB.',
+        path == 'me/vehicles'
+            ? 'Choose smaller images. Each vehicle document must fit within 2 MB.'
+            : 'Choose smaller images. Each CNIC side must fit within 1 MB.',
+      'driver_identity_required' =>
+        'Submit your driver identity before registering a vehicle.',
+      'vehicle_not_found' => 'This vehicle is no longer available to edit.',
+      'upload_timeout' =>
+        'The upload took too long. Try a stronger connection or smaller images.',
       'invalid_document' =>
         'Choose a readable JPEG or PNG within 4096 pixels per side and 8 megapixels.',
       'document_quota_exceeded' =>
@@ -217,8 +228,21 @@ class AuthSession extends ChangeNotifier {
     required Object? accountId,
   }) => _driverIdentityRequest(accountId: accountId, fields: fields);
 
+  Future<Map<String, dynamic>> vehicles({required Object? accountId}) =>
+      _driverIdentityRequest(accountId: accountId, path: 'me/vehicles');
+
+  Future<Map<String, dynamic>> submitVehicle(
+    Map<String, String> fields, {
+    required Object? accountId,
+  }) => _driverIdentityRequest(
+    accountId: accountId,
+    path: 'me/vehicles',
+    fields: fields,
+  );
+
   Future<Map<String, dynamic>> _driverIdentityRequest({
     required Object? accountId,
+    String path = 'me/driver-submission',
     Map<String, String>? fields,
   }) async {
     late Map<String, dynamic> result;
@@ -227,7 +251,7 @@ class AuthSession extends ChangeNotifier {
         throw const AuthError('Please log in again.', 401);
       }
       result = await _requestCurrentUser(
-        path: 'me/driver-submission',
+        path: path,
         update: fields,
         method: fields == null ? 'GET' : 'POST',
       );
