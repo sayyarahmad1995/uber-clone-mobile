@@ -12,10 +12,12 @@ class _RealHttp extends HttpOverrides {}
 void main() {
   const smsLog = String.fromEnvironment('HIGO_TEST_SMS_LOG');
   const phone = '+923001234567';
+  const updatedName = 'Updated Test Rider';
+  const updatedEmail = 'updated@example.test';
   const oldPassword = 'a strong original password';
   const newPassword = 'a strong replacement password';
 
-  testWidgets('runs registration, sessions, and recovery against Go', (
+  testWidgets('runs authentication and profile editing against Go', (
     tester,
   ) async {
     FlutterSecureStorage.setMockInitialValues({});
@@ -88,6 +90,21 @@ void main() {
     await enterCode();
     await waitFor(find.byType(RiderShell));
 
+    await tap(find.text('Account').last);
+    await tap(find.text('Personal Information'));
+    expect(find.text(phone), findsOneWidget);
+    await tap(find.text('Edit Profile'));
+    final profileFields = find.byType(EditableText);
+    await tester.enterText(profileFields.at(0), updatedName);
+    await tester.enterText(profileFields.at(1), updatedEmail);
+    await tap(find.text('Save Changes'), network: true);
+    await waitFor(find.text(updatedEmail));
+    expect(find.text(updatedName), findsWidgets);
+    expect(find.text(phone), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text(updatedName), findsOneWidget);
+
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {
       final restored = HttpOverrides.runZoned(
@@ -96,6 +113,8 @@ void main() {
       );
       await restored.restore();
       expect(restored.user?['phone'], phone);
+      expect(restored.user?['name'], updatedName);
+      expect(restored.user?['email'], updatedEmail);
       await restored.logout();
       await authSession.restore();
     });
@@ -106,6 +125,12 @@ void main() {
     await tester.enterText(find.byType(EditableText), oldPassword);
     await tap(find.text('Log In'), network: true);
     await waitFor(find.byType(RiderShell));
+    await tap(find.text('Account').last);
+    await tap(find.text('Personal Information'));
+    expect(find.text(updatedEmail), findsOneWidget);
+    expect(find.text(updatedName), findsWidgets);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await logout();
 
     // The backend shares a rolling SMS cooldown across registration and recovery.

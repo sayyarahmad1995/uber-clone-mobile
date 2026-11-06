@@ -72,7 +72,10 @@ class RiderAccountScreen extends StatelessWidget {
                             radius: 30,
                             backgroundColor: const Color(0xFFEFECFF),
                             child: Text(
-                              profile.firstName[0].toUpperCase(),
+                              profile.firstName.isEmpty
+                                  ? '?'
+                                  : profile.firstName.characters.first
+                                        .toUpperCase(),
                               style: const TextStyle(
                                 fontSize: 23,
                                 fontWeight: FontWeight.w800,
@@ -95,7 +98,7 @@ class RiderAccountScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 5),
                                 const Text(
-                                  'Rider · Demo profile',
+                                  'Rider',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: HiGoTheme.secondaryText,

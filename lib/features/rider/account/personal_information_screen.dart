@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/higo_theme.dart';
+import '../../auth/auth_session.dart';
 import 'rider_profile_store.dart';
 
 const _profileBackground = BoxDecoration(
@@ -273,7 +276,7 @@ class _PrimaryAction extends StatelessWidget {
 
   final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -323,16 +326,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
+  late final RiderProfile _initialProfile;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
 
-    final profile = riderProfileStore.profile;
+    _initialProfile = riderProfileStore.profile;
 
-    _nameController = TextEditingController(text: profile.fullName);
+    _nameController = TextEditingController(text: _initialProfile.fullName);
 
-    _emailController = TextEditingController(text: profile.email);
+    _emailController = TextEditingController(text: _initialProfile.email);
   }
 
   @override
@@ -342,24 +347,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _saveProfile() {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  Future<void> _saveProfile() async {
+    if (_saving || !_formKey.currentState!.validate()) return;
+
+    setState(() => _saving = true);
+    try {
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      await riderProfileStore.updateProfile(
+        fullName: name == _initialProfile.fullName ? null : name,
+        email: email == _initialProfile.email ? null : email,
+      );
+      if (mounted && ModalRoute.isCurrentOf(context) == true) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (!mounted || ModalRoute.isCurrentOf(context) != true) return;
+      final messenger = ScaffoldMessenger.of(context);
+      if (error is AuthError &&
+          error.status == 401 &&
+          !authSession.authenticated) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      messenger.showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    riderProfileStore.updateProfile(
-      fullName: _nameController.text,
-      email: _emailController.text,
-    );
-
-    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = riderProfileStore.profile;
 
-    return Scaffold(
+    final page = Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFF2EDFF),
         title: const Text(
@@ -386,6 +406,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                 TextFormField(
                   controller: _nameController,
+                  enabled: !_saving,
                   textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
@@ -395,6 +416,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Full name is required';
                     }
+                    if (utf8.encode(value.trim()).length > 150) {
+                      return 'Enter a shorter name';
+                    }
                     return null;
                   },
                 ),
@@ -403,6 +427,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                 TextFormField(
                   controller: _emailController,
+                  enabled: !_saving,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email Address',
@@ -411,7 +436,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   validator: (value) {
                     final email = value?.trim() ?? '';
 
-                    if (email.isEmpty) return null;
+                    if (email.isEmpty || email == _initialProfile.email) {
+                      return null;
+                    }
+                    if (utf8.encode(email).length > 254) {
+                      return 'Enter a shorter email address';
+                    }
 
                     final valid = RegExp(
                       r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
@@ -437,9 +467,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 12),
 
                 const Text(
-                  'Phone number changes require '
-                  'verification and are not '
-                  'available in this mock version.',
+                  'Changing your phone number requires verification.',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.5,
@@ -450,15 +478,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 26),
 
                 _PrimaryAction(
-                  label: 'Save Changes',
+                  label: _saving ? 'Saving…' : 'Save Changes',
                   icon: Icons.check,
-                  onPressed: _saveProfile,
+                  onPressed: _saving ? null : _saveProfile,
                 ),
 
                 const SizedBox(height: 10),
 
                 OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _saving ? null : () => Navigator.of(context).pop(),
                   child: const Text('Cancel'),
                 ),
               ],
@@ -467,5 +495,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
+    return PopScope(canPop: !_saving, child: page);
   }
 }

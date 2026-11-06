@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-/// Mock rider profile data.
-///
-/// Replace with data from the Go backend when
-/// real API integration begins.
+import '../../auth/auth_session.dart';
+
 @immutable
 class RiderProfile {
   const RiderProfile({
@@ -25,41 +23,30 @@ class RiderProfile {
   }
 }
 
-/// Lightweight, in-memory mock state.
-///
-/// No third-party state-management package.
-class RiderProfileStore extends ChangeNotifier {
-  RiderProfile _profile = const RiderProfile(
-    fullName: 'Ali',
-    phoneNumber: '+92 300 1234567',
-    email: 'ali@example.com',
-  );
+/// The signed-in account is the only profile cache.
+class RiderProfileStore implements Listenable {
+  RiderProfileStore(this._session);
 
-  RiderProfile get profile => _profile;
+  final AuthSession _session;
 
-  void updateProfile({required String fullName, required String email}) {
-    final name = fullName.trim().replaceAll(RegExp(r'\s+'), ' ');
-
-    final cleanedEmail = email.trim();
-
-    if (name.isEmpty) {
-      throw ArgumentError('Full name is required.');
-    }
-
-    if (cleanedEmail.isNotEmpty &&
-        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(cleanedEmail)) {
-      throw ArgumentError('Invalid email address.');
-    }
-
-    _profile = RiderProfile(
-      fullName: name,
-      phoneNumber: _profile.phoneNumber,
-      email: cleanedEmail,
+  RiderProfile get profile {
+    final user = _session.user;
+    return RiderProfile(
+      fullName: user?['name'] as String? ?? '',
+      phoneNumber: user?['phone'] as String? ?? '',
+      email: user?['email'] as String? ?? '',
     );
-
-    notifyListeners();
   }
+
+  Future<void> updateProfile({String? fullName, String? email}) =>
+      _session.updateProfile(name: fullName, email: email);
+
+  @override
+  void addListener(VoidCallback listener) => _session.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _session.removeListener(listener);
 }
 
-/// Shared mock profile for Rider screens.
-final riderProfileStore = RiderProfileStore();
+final riderProfileStore = RiderProfileStore(authSession);
