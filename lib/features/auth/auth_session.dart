@@ -262,6 +262,7 @@ class AuthSession extends ChangeNotifier {
     required int identityVersion,
     required String vehicleId,
     required int vehicleVersion,
+    String? draftRevision,
   }) => _driverIdentityRequest(
     accountId: accountId,
     path: 'me/driver-application',
@@ -269,6 +270,7 @@ class AuthSession extends ChangeNotifier {
       'identity_version': identityVersion,
       'vehicle_id': vehicleId,
       'vehicle_version': vehicleVersion,
+      'draft_revision': ?draftRevision,
     },
   );
 

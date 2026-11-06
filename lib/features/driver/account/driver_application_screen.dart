@@ -18,11 +18,11 @@ class DriverApplicationScreen extends StatefulWidget {
 }
 
 const _vehicleFields = {
-  'make': 'Vehicle make',
-  'model': 'Vehicle model',
-  'manufacture_year': 'Manufacturing year',
-  'color': 'Vehicle color',
-  'registration_number': 'Registration number',
+  'make': 'Vehicle Make',
+  'model': 'Vehicle Model',
+  'manufacture_year': 'Manufacturing Year',
+  'color': 'Vehicle Color',
+  'registration_number': 'Registration Number',
 };
 
 const _documentLabels = {
@@ -35,7 +35,7 @@ const _documentLabels = {
 class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
   AuthSession get _session => widget.session ?? authSession;
   late final Object? _owner = _session.user?['id'];
-  final _form = GlobalKey<FormState>();
+  var _form = GlobalKey<FormState>();
   final _draft = <String, String>{};
   final _documents = <String, Uint8List>{};
   Map<String, dynamic>? _application;
@@ -94,10 +94,9 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
   Future<void> _load() => _run(() async {
     final application = await _session.driverApplication(accountId: _owner);
     if (!mounted || !_sameAccount) return;
-    final saved = application['draft'];
-    _draft
-      ..clear()
-      ..addAll(saved is Map ? saved.cast<String, String>() : {});
+    if (!_adoptDraft(application['draft'])) _draft.clear();
+    _documents.clear();
+    _form = GlobalKey<FormState>();
     _draft.putIfAbsent(
       'legal_name',
       () => _session.user?['name'] as String? ?? '',
@@ -115,6 +114,14 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
         (application['status'] != 'under_review' && _draft['step'] != null);
   });
 
+  bool _adoptDraft(Object? value) {
+    if (value is! Map) return false;
+    _draft
+      ..clear()
+      ..addAll(value.cast<String, String>());
+    return true;
+  }
+
   Future<void> _persist(Map<String, String> values) async {
     final response = await _session.saveDriverApplicationDraft(
       values,
@@ -122,7 +129,11 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
     );
     if (!mounted || !_sameAccount) return;
     _application = response;
-    _draft.addAll(values);
+    if (!_adoptDraft(response['draft'])) {
+      _draft
+        ..clear()
+        ..addAll(values);
+    }
   }
 
   Future<void> _advanceDetails() => _run(() async {
@@ -161,23 +172,32 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
   Future<void> _upload() => _run(() async {
     if (!_hasIdentity) {
       final saved = await _session.submitDriverIdentity({
+        if (_draft['revision'] case final String revision)
+          'draft_revision': revision,
         'legal_name': _draft['legal_name']!,
         'cnic_front': base64Encode(_documents['cnic_front']!),
         'cnic_back': base64Encode(_documents['cnic_back']!),
       }, accountId: _owner);
       if (!mounted || !_sameAccount) return;
-      _draft['identity_version'] = saved['version'].toString();
-      if (saved['legal_name'] case final String name) {
-        _draft['legal_name'] = name;
+      if (!_adoptDraft(saved['application_draft'])) {
+        _draft['identity_version'] = saved['version'].toString();
+        if (saved['legal_name'] case final String name) {
+          _draft['legal_name'] = name;
+        }
       }
       _documents.remove('cnic_front');
       _documents.remove('cnic_back');
     }
-    // Persist the first completed upload before starting the second request.
-    await _persist({..._draft, 'step': '2'});
+    // Older API responses require a separate save. Revision-aware uploads
+    // attach the version to the draft in the same transaction as the upload.
+    if (!_draft.containsKey('revision')) {
+      await _persist({..._draft, 'step': '2'});
+    }
     if (!mounted || !_sameAccount) return;
     if (!_hasVehicle) {
       final saved = await _session.submitVehicle({
+        if (_draft['revision'] case final String revision)
+          'draft_revision': revision,
         if (_hasPositiveNumber('vehicle_id'))
           'vehicle_id': _draft['vehicle_id']!,
         for (final key in _vehicleFields.keys) key: _draft[key]!,
@@ -185,14 +205,16 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
         'insurance_image': base64Encode(_documents['insurance_image']!),
       }, accountId: _owner);
       if (!mounted || !_sameAccount) return;
-      _draft['vehicle_id'] = saved['vehicle_id'].toString();
-      _draft['vehicle_version'] = saved['version'].toString();
-      for (final key in _vehicleFields.keys) {
-        if (saved[key] != null) _draft[key] = saved[key].toString();
+      if (!_adoptDraft(saved['application_draft'])) {
+        _draft['vehicle_id'] = saved['vehicle_id'].toString();
+        _draft['vehicle_version'] = saved['version'].toString();
+        for (final key in _vehicleFields.keys) {
+          if (saved[key] != null) _draft[key] = saved[key].toString();
+        }
       }
       _documents.clear();
     }
-    await _persist({..._draft, 'step': '3'});
+    if (_draft['step'] != '3') await _persist({..._draft, 'step': '3'});
     if (mounted && _sameAccount) _step = 3;
   });
 
@@ -202,6 +224,7 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
       identityVersion: int.parse(_draft['identity_version']!),
       vehicleId: _draft['vehicle_id']!,
       vehicleVersion: int.parse(_draft['vehicle_version']!),
+      draftRevision: _draft['revision'],
     );
     if (!mounted || !_sameAccount) return;
     _application = result;
@@ -391,31 +414,33 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
             ? const Center(
                 child: Text('Sign in to view your driver application.'),
               )
-            : ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  if (_busy) const LinearProgressIndicator(),
-                  if (_error != null) Text(_error!),
-                  if (_stale) ...[
-                    TextButton(
-                      onPressed: _load,
-                      child: const Text('Refresh application'),
-                    ),
-                    TextButton(
-                      onPressed: _revise,
-                      child: const Text('Replace saved documents'),
-                    ),
+            : SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    if (_busy) const LinearProgressIndicator(),
+                    if (_error != null) Text(_error!),
+                    if (_stale) ...[
+                      TextButton(
+                        onPressed: _load,
+                        child: const Text('Refresh application'),
+                      ),
+                      TextButton(
+                        onPressed: _revise,
+                        child: const Text('Replace saved documents'),
+                      ),
+                    ],
+                    if (_application != null)
+                      ...(_editing ? _stepContent() : _statusContent())
+                    else if (!_busy)
+                      TextButton(onPressed: _load, child: const Text('Retry')),
+                    if (_editing && _step > 0)
+                      TextButton(
+                        onPressed: _busy ? null : _back,
+                        child: const Text('Previous step'),
+                      ),
                   ],
-                  if (_application != null)
-                    ...(_editing ? _stepContent() : _statusContent())
-                  else if (!_busy)
-                    TextButton(onPressed: _load, child: const Text('Retry')),
-                  if (_editing && _step > 0)
-                    TextButton(
-                      onPressed: _busy ? null : _back,
-                      child: const Text('Previous step'),
-                    ),
-                ],
+                ),
               ),
       ),
     );
