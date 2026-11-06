@@ -4,6 +4,8 @@ import '../features/auth/auth_session.dart';
 import '../features/rider/home/rider_shell.dart';
 import '../features/welcome/welcome_screen.dart';
 import 'higo_theme.dart';
+import 'app_mode_controller.dart';
+import '../features/driver/home/driver_shell.dart';
 
 class HiGoApp extends StatefulWidget {
   const HiGoApp({super.key});
@@ -40,9 +42,11 @@ class _HiGoAppState extends State<HiGoApp> {
           );
         }
         return ListenableBuilder(
-          listenable: authSession,
+          listenable: Listenable.merge([authSession, appMode]),
           builder: (_, _) => authSession.authenticated
-              ? const RiderShell(key: ValueKey('rider-shell'))
+              ? appMode.value == HiGoAppMode.driver && appMode.canUseDriverMode
+                    ? const DriverShell(key: ValueKey('driver-shell'))
+                    : const RiderShell(key: ValueKey('rider-shell'))
               : const WelcomeScreen(),
         );
       },

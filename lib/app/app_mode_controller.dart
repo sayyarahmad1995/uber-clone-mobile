@@ -1,19 +1,47 @@
 import 'package:flutter/foundation.dart';
 
+import '../features/auth/auth_session.dart';
+import '../features/driver/models/mock_ride_request.dart';
+
 enum HiGoAppMode { rider, driver }
 
-// Development-only mode controller.
-//
-// Later, driver access will depend on the authenticated
-// user's approved driver capability.
-final ValueNotifier<HiGoAppMode> hiGoAppMode = ValueNotifier<HiGoAppMode>(
-  HiGoAppMode.driver,
-);
+class AppModeController extends ValueNotifier<HiGoAppMode> {
+  AppModeController(this.session) : super(HiGoAppMode.rider) {
+    session.addListener(_updateAccount);
+    _updateAccount();
+  }
 
-void switchToRiderMode() {
-  hiGoAppMode.value = HiGoAppMode.rider;
+  final AuthSession session;
+  Object? _account;
+
+  bool get canUseDriverMode {
+    final capabilities = session.user?['capabilities'];
+    return capabilities is List && capabilities.contains('driver');
+  }
+
+  void _updateAccount() {
+    final account = session.user?['id'];
+    final accountChanged = account != _account;
+    if (accountChanged) DriverDemoStore.instance.resetDemo();
+    if (accountChanged || !canUseDriverMode) {
+      value = HiGoAppMode.rider;
+    }
+    _account = account;
+  }
+
+  void switchToDriver() {
+    if (canUseDriverMode) value = HiGoAppMode.driver;
+  }
+
+  void switchToRider() => value = HiGoAppMode.rider;
+
+  @override
+  void dispose() {
+    session.removeListener(_updateAccount);
+    super.dispose();
+  }
 }
 
-void switchToDriverMode() {
-  hiGoAppMode.value = HiGoAppMode.driver;
-}
+final appMode = AppModeController(authSession);
+
+void switchToRiderMode() => appMode.switchToRider();
