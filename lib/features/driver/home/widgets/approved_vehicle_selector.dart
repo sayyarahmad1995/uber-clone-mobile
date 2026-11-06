@@ -39,7 +39,7 @@ class ApprovedVehicleSelector extends StatelessWidget {
                 TextButton(
                   onPressed: onManageVehicles,
                   child: const Text(
-                    'My Vehicles',
+                    'Driver Application',
                     style: TextStyle(fontSize: 12),
                   ),
                 ),
@@ -73,7 +73,7 @@ class ApprovedVehicleSelector extends StatelessWidget {
                     ),
                     SizedBox(height: 5),
                     Text(
-                      'Add a vehicle and wait for approval '
+                      'Complete your driver application and wait for approval '
                       'before going online.',
                       textAlign: TextAlign.center,
                       style: TextStyle(

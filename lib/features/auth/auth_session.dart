@@ -8,9 +8,10 @@ import 'package:http/http.dart' as http;
 final authSession = AuthSession();
 
 class AuthError implements Exception {
-  const AuthError(this.message, [this.status]);
+  const AuthError(this.message, [this.status, this.code]);
   final String message;
   final int? status;
+  final String? code;
 }
 
 bool validAuthPassword(String password) {
@@ -67,7 +68,9 @@ class AuthSession extends ChangeNotifier {
           .then(http.Response.fromStream)
           .timeout(
             Duration(
-              seconds: path == 'me/vehicles' && method == 'POST' ? 30 : 15,
+              seconds: path.endsWith('/vehicle-documents') && method == 'POST'
+                  ? 30
+                  : 15,
             ),
           );
     } on Exception {
@@ -81,29 +84,33 @@ class AuthSession extends ChangeNotifier {
       throw const AuthError('HiGO returned an unexpected response.');
     }
     if (response.statusCode >= 200 && response.statusCode < 300) return payload;
-    final message = switch (payload['error']) {
+    final errorCode = payload['error'];
+    final message = switch (errorCode) {
       'invalid_credentials' => 'Invalid phone number or password.',
       'invalid_or_expired_code' => 'The code is invalid or expired.',
       'invalid_or_expired_recovery_token' =>
         'The reset expired. Request a new code.',
       'rate_limited' => 'Too many attempts. Please wait and try again.',
       'document_too_large' =>
-        path == 'me/vehicles'
+        path.endsWith('/vehicle-documents')
             ? 'Choose smaller images. Each vehicle document must fit within 2 MB.'
             : 'Choose smaller images. Each CNIC side must fit within 1 MB.',
-      'driver_identity_required' =>
-        'Submit your driver identity before registering a vehicle.',
-      'vehicle_not_found' => 'This vehicle is no longer available to edit.',
       'upload_timeout' =>
         'The upload took too long. Try a stronger connection or smaller images.',
       'invalid_document' =>
         'Choose a readable JPEG or PNG within 4096 pixels per side and 8 megapixels.',
       'document_quota_exceeded' =>
         'Too many document versions are retained. Try again after older copies expire.',
+      'onboarding_incomplete' =>
+        'Complete the required details and save both document pairs before continuing.',
       'invalid_request' => 'Check the details and try again.',
       _ => 'HiGO could not complete the request. Try again.',
     };
-    throw AuthError(message, response.statusCode);
+    throw AuthError(
+      message,
+      response.statusCode,
+      errorCode is String ? errorCode : null,
+    );
   }
 
   Future<void> signIn(Map<String, dynamic> tokens) async {
@@ -219,30 +226,43 @@ class AuthSession extends ChangeNotifier {
     });
   }
 
-  Future<Map<String, dynamic>> driverIdentitySubmission({
+  Future<Map<String, dynamic>> driverApplication({
     required Object? accountId,
-  }) => _driverIdentityRequest(accountId: accountId);
+  }) => _driverApplicationRequest(accountId: accountId);
 
-  Future<Map<String, dynamic>> submitDriverIdentity(
-    Map<String, String> fields, {
+  Future<Map<String, dynamic>> saveDriverApplicationDraft(
+    Map<String, String> draft, {
     required Object? accountId,
-  }) => _driverIdentityRequest(accountId: accountId, fields: fields);
-
-  Future<Map<String, dynamic>> vehicles({required Object? accountId}) =>
-      _driverIdentityRequest(accountId: accountId, path: 'me/vehicles');
-
-  Future<Map<String, dynamic>> submitVehicle(
-    Map<String, String> fields, {
-    required Object? accountId,
-  }) => _driverIdentityRequest(
+  }) => _driverApplicationRequest(
     accountId: accountId,
-    path: 'me/vehicles',
-    fields: fields,
+    fields: draft,
+    method: 'PATCH',
   );
 
-  Future<Map<String, dynamic>> _driverIdentityRequest({
+  Future<Map<String, dynamic>> saveDriverApplicationDocuments(
+    Map<String, String> fields, {
     required Object? accountId,
-    String path = 'me/driver-submission',
+    required bool identity,
+  }) => _driverApplicationRequest(
+    accountId: accountId,
+    suffix: identity ? '/identity-documents' : '/vehicle-documents',
+    fields: fields,
+    method: 'POST',
+  );
+
+  Future<Map<String, dynamic>> submitDriverApplication({
+    required Object? accountId,
+    required String draftRevision,
+  }) => _driverApplicationRequest(
+    accountId: accountId,
+    fields: {'draft_revision': draftRevision},
+    method: 'POST',
+  );
+
+  Future<Map<String, dynamic>> _driverApplicationRequest({
+    required Object? accountId,
+    String suffix = '',
+    String method = 'GET',
     Map<String, String>? fields,
   }) async {
     late Map<String, dynamic> result;
@@ -251,9 +271,9 @@ class AuthSession extends ChangeNotifier {
         throw const AuthError('Please log in again.', 401);
       }
       result = await _requestCurrentUser(
-        path: path,
+        path: 'me/driver-application$suffix',
         update: fields,
-        method: fields == null ? 'GET' : 'POST',
+        method: method,
       );
     });
     return result;

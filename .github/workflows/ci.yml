@@ -27,3 +27,33 @@ jobs:
         run: flutter analyze --no-pub
       - name: Run standalone tests
         run: flutter test --no-pub
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: sayyarahmad1995/higo-backend
+          ref: 37664c3d480cd5b87a9de749411c6e8f5c82de34
+          path: .ci/core
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: .ci/core/go.sum
+      - name: Build Core and start PostgreSQL
+        working-directory: .ci/core
+        run: |
+          docker compose up -d --wait postgres
+          go build -o "$RUNNER_TEMP/higo-api" ./cmd/api
+      - name: Verify onboarding against Core
+        env:
+          DATABASE_URL: postgres://higo:local_higo_only@127.0.0.1:5432/higo?sslmode=disable
+          HIGO_ENV: development
+          HIGO_LISTEN_ADDR: 127.0.0.1:58080
+        run: |
+          export HIGO_OTP_KEY="$(openssl rand -base64 32)"
+          export HIGO_DRIVER_DOCUMENT_KEY="$(openssl rand -base64 32)"
+          "$RUNNER_TEMP/higo-api" >"$RUNNER_TEMP/higo.log" 2>&1 &
+          core_pid=$!
+          trap 'kill "$core_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 20 --retry-connrefused --retry-delay 1 http://127.0.0.1:58080/healthz
+          flutter test --no-pub test/auth_live_test.dart \
+            --dart-define=HIGO_API_URL=http://127.0.0.1:58080 \
+            "--dart-define=HIGO_TEST_SMS_LOG=$RUNNER_TEMP/higo.log"
