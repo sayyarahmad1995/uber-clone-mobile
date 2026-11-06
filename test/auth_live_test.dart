@@ -42,6 +42,17 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    Future<void> waitFor(Finder finder) async {
+      for (var i = 0; i < 100 && finder.evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
+      expect(finder, findsOneWidget);
+      await tester.pumpAndSettle();
+    }
+
     Future<void> enterPhone() async {
       await tester.enterText(find.byType(EditableText), '3001234567');
       await tap(find.text('Continue'));
@@ -75,7 +86,7 @@ void main() {
     await tester.enterText(fields.at(2), oldPassword);
     await tap(find.text('Send verification code'), network: true);
     await enterCode();
-    expect(find.byType(RiderShell), findsOneWidget);
+    await waitFor(find.byType(RiderShell));
 
     // A fresh controller restores exclusively from platform storage.
     await tester.runAsync(() async {
@@ -94,7 +105,7 @@ void main() {
     await enterPhone();
     await tester.enterText(find.byType(EditableText), oldPassword);
     await tap(find.text('Log In'), network: true);
-    expect(find.byType(RiderShell), findsOneWidget);
+    await waitFor(find.byType(RiderShell));
     await logout();
 
     // The backend shares a rolling SMS cooldown across registration and recovery.
@@ -117,7 +128,7 @@ void main() {
     expect(find.text('Invalid phone number or password.'), findsOneWidget);
     await tester.enterText(find.byType(EditableText), newPassword);
     await tap(find.text('Log In'), network: true);
-    expect(find.byType(RiderShell), findsOneWidget);
+    await waitFor(find.byType(RiderShell));
     await logout();
   }, skip: smsLog.isEmpty);
 }

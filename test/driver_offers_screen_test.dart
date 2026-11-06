@@ -160,9 +160,11 @@ void main() {
     expect(find.text('Demo: Driver declines'), findsOneWidget);
 
     await tester.tap(find.text('Demo: Driver declines'));
-    await tester.pump();
-    // Do not pumpAndSettle while the empty-offers scanner repeats.
-    await tester.pump(const Duration(milliseconds: 400));
+    // Wait for the scheduled route pop without settling the repeating scanner.
+    for (var frame = 0; frame < 10; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      if (find.text('Ahmed Khan').evaluate().isEmpty) break;
+    }
 
     expect(find.byKey(const Key('offers-floating-controls')), findsOneWidget);
     expect(find.text('Ahmed Khan'), findsNothing);

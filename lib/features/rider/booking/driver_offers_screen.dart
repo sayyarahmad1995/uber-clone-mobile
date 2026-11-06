@@ -207,9 +207,8 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
 
   Future<void> _increaseFare() async {
     setState(() => _interactionPaused = true);
-    final controller = TextEditingController(
-      text: (_proposedFarePkr + 50).toString(),
-    );
+    final suggestedFare = (_proposedFarePkr + 50).toString();
+    var fareText = suggestedFare;
     String? error;
     final newFare = await showDialog<int>(
       context: context,
@@ -222,8 +221,9 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
             children: [
               Text('Current offer: ${formatOfferFare(_proposedFarePkr)}'),
               const SizedBox(height: 12),
-              TextField(
-                controller: controller,
+              TextFormField(
+                initialValue: suggestedFare,
+                onChanged: (value) => fareText = value,
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -249,7 +249,7 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
             ),
             FilledButton(
               onPressed: () {
-                final proposed = int.tryParse(controller.text);
+                final proposed = int.tryParse(fareText);
                 if (proposed == null ||
                     proposed <= _proposedFarePkr ||
                     proposed > 1000000) {
@@ -266,7 +266,6 @@ class _DriverOffersScreenState extends State<DriverOffersScreen> {
         ),
       ),
     );
-    controller.dispose();
     if (!mounted) return;
     setState(() => _interactionPaused = false);
     if (newFare == null) return;
