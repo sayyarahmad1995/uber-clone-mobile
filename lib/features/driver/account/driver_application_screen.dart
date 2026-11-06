@@ -169,8 +169,9 @@ class _DriverApplicationScreenState extends State<DriverApplicationScreen> {
       ..addAll(
         (application['documents'] as List? ?? const []).whereType<String>(),
       );
-    if (!_saved.contains('selfie') && _pendingKind != 'selfie')
+    if (!_saved.contains('selfie') && _pendingKind != 'selfie') {
       _setSelfie(null);
+    }
     _underReview = application['status'] == 'pending_review';
     _loaded = true;
   }
